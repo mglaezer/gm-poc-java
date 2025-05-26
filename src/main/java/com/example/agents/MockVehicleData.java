@@ -3,6 +3,7 @@ package com.example.agents;
 import java.util.List;
 import java.util.Map;
 import com.example.agents.CommonRequirements.VehicleInfo;
+import com.example.agents.CommonRequirements.VehicleMake;
 import com.example.agents.CommonRequirements.Dealer;
 
 /**
@@ -15,7 +16,7 @@ public class MockVehicleData {
         new VehicleInfo(
             // Basic identification
             "GM001",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Silverado 1500",
             2024,
             "LT",
@@ -89,7 +90,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM002",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Equinox",
             2024,
             "LS",
@@ -153,7 +154,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM003",
-            "GMC",
+            VehicleMake.GMC,
             "Sierra 1500",
             2024,
             "SLE",
@@ -217,7 +218,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM004",
-            "Cadillac",
+            VehicleMake.CADILLAC,
             "XT5",
             2024,
             "Luxury",
@@ -281,7 +282,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM005",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Malibu",
             2024,
             "LT",
@@ -345,7 +346,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM006",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Bolt EV",
             2024,
             "2LT",
@@ -409,7 +410,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM007",
-            "GMC",
+            VehicleMake.GMC,
             "Yukon",
             2024,
             "SLT",
@@ -473,7 +474,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM008",
-            "Cadillac",
+            VehicleMake.CADILLAC,
             "CT5",
             2024,
             "Premium Luxury",
@@ -537,7 +538,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM009",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Traverse",
             2024,
             "LT",
@@ -601,7 +602,7 @@ public class MockVehicleData {
         ),
         new VehicleInfo(
             "GM010",
-            "Chevrolet",
+            VehicleMake.CHEVROLET,
             "Camaro",
             2024,
             "2LT",

@@ -26,7 +26,7 @@ public class GMVehicleAgent {
                 - Key features and technology
                 - Safety features
                 
-                Be friendly, professional, and informative. If a user asks about a vehicle that doesn't exist in the database,
+                Be friendly, professional, and informative, but also humorous! If a user asks about a vehicle that doesn't exist in the database,
                 politely let them know and suggest similar alternatives.
                 """)
         String chat(String userMessage);

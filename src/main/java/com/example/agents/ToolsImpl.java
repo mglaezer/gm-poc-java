@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.example.agents.CommonRequirements.*;
+import com.example.agents.CommonRequirements.VehicleMake;
 
 /**
  * Implementation of the Tools interface providing mock functionality
@@ -18,8 +19,11 @@ public class ToolsImpl implements Tools {
     public List<VehicleInfo> searchVehicleInventory(SearchCriteria criteria) {
         return MockVehicleData.VEHICLES.stream()
             .filter(vehicle -> {
-                if (criteria.category() != null && !vehicle.category().equalsIgnoreCase(criteria.category())) {
-                    return false;
+                if (criteria.category() != null) {
+                    VehicleCategory vehicleCategory = VehicleCategory.fromString(vehicle.category());
+                    if (vehicleCategory != criteria.category()) {
+                        return false;
+                    }
                 }
                 if (criteria.minPrice() != null && vehicle.price() < criteria.minPrice()) {
                     return false;
@@ -63,8 +67,12 @@ public class ToolsImpl implements Tools {
     }
     
     public VehicleInfo getVehicleByMakeAndModel(String make, String model) {
+        VehicleMake vehicleMake = VehicleMake.fromString(make);
+        if (vehicleMake == null) {
+            return null;
+        }
         return MockVehicleData.VEHICLES.stream()
-            .filter(vehicle -> vehicle.make().equalsIgnoreCase(make) && 
+            .filter(vehicle -> vehicle.make() == vehicleMake && 
                              vehicle.model().equalsIgnoreCase(model))
             .findFirst()
             .orElse(null);

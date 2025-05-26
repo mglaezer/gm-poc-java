@@ -54,10 +54,73 @@ import java.util.List;
  */
 public interface CommonRequirements {
     
+    enum VehicleMake {
+        CHEVROLET("Chevrolet"),
+        GMC("GMC"),
+        CADILLAC("Cadillac"),
+        BUICK("Buick");
+        
+        private final String displayName;
+        
+        VehicleMake(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        public String getDisplayName() {
+            return displayName;
+        }
+        
+        public static VehicleMake fromString(String text) {
+            for (VehicleMake make : VehicleMake.values()) {
+                if (make.displayName.equalsIgnoreCase(text)) {
+                    return make;
+                }
+            }
+            return null;
+        }
+    }
+    
+    enum VehicleCategory {
+        TRUCK("Truck"),
+        SUV("SUV"),
+        SEDAN("Sedan"),
+        SPORTS_CAR("Sports Car"),
+        ELECTRIC("Electric"),
+        LUXURY_SUV("Luxury SUV"),
+        LUXURY_SEDAN("Luxury Sedan"),
+        FULL_SIZE_SUV("Full-Size SUV"),
+        THREE_ROW_SUV("3-Row SUV"),
+        COMPACT_SUV("Compact SUV"),
+        PICKUP("Pickup"),
+        HATCHBACK("Hatchback"),
+        COUPE("Coupe"),
+        MIDSIZE("Midsize"),
+        LARGE_SUV("Large SUV");
+        
+        private final String displayName;
+        
+        VehicleCategory(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        public String getDisplayName() {
+            return displayName;
+        }
+        
+        public static VehicleCategory fromString(String text) {
+            for (VehicleCategory category : VehicleCategory.values()) {
+                if (category.displayName.equalsIgnoreCase(text)) {
+                    return category;
+                }
+            }
+            return null;
+        }
+    }
+    
     record VehicleInfo(
         // Basic identification
         String id,
-        String make,
+        VehicleMake make,
         String model,
         int year,
         String trim,
@@ -147,7 +210,7 @@ public interface CommonRequirements {
     ) {}
     
     record SearchCriteria(
-        String category,
+        VehicleCategory category,
         Double minPrice,
         Double maxPrice,
         Integer minMpg,
