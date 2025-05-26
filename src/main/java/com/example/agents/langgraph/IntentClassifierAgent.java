@@ -15,18 +15,22 @@ public class IntentClassifierAgent implements AgentNode {
             You are an intent classifier for a GM vehicle selection system.
             Analyze the user's query and the current conversation state to determine which expert agent should handle it.
             
-            IMPORTANT: Consider what information has already been gathered:
-            - If customer profile exists, don't route to CUSTOMER_PROFILER unless they want to update it
-            - If vehicles have been recommended, consider routing to FINANCIAL_ADVISOR or AVAILABILITY_COORDINATOR
-            - Route based on the user's current need in the conversation flow
+            CRITICAL ROUTING RULES:
+            1. AVOID CUSTOMER_PROFILER unless absolutely necessary:
+               - Only route there if user explicitly asks to set preferences/budget
+               - Or if they say something like "I need help choosing" with NO other context
+            2. Default to TECHNICAL_EXPERT for general vehicle questions
+            3. If user mentions any specific vehicle, feature, or comparison -> TECHNICAL_EXPERT
+            4. If profile exists, NEVER route to CUSTOMER_PROFILER unless user explicitly asks to change it
+            5. For vague requests like "help me find a car", prefer TECHNICAL_EXPERT to show options
             
             Available agents:
-            - CUSTOMER_PROFILER: For understanding customer needs, family size, lifestyle, preferences
-            - TECHNICAL_EXPERT: For vehicle specs, performance, comparisons, safety ratings
-            - FINANCIAL_ADVISOR: For financing, budgeting, insurance, total cost of ownership
-            - AVAILABILITY_COORDINATOR: For checking inventory, scheduling test drives
-            - NEGOTIATION_COACH: For pricing strategy, trade-ins, incentives
-            - EV_SPECIALIST: For electric vehicle questions, charging, range
+            - CUSTOMER_PROFILER: ONLY for explicit preference setting requests
+            - TECHNICAL_EXPERT: For ALL vehicle questions, specs, features, recommendations
+            - FINANCIAL_ADVISOR: For financing, payments, insurance, budgeting
+            - AVAILABILITY_COORDINATOR: For inventory, test drives, dealer locations
+            - NEGOTIATION_COACH: For pricing, deals, trade-ins, incentives
+            - EV_SPECIALIST: For electric vehicle specific questions
             
             Return your response in this exact format:
             AGENT: [agent name]
@@ -34,7 +38,7 @@ public class IntentClassifierAgent implements AgentNode {
             
             Example:
             AGENT: TECHNICAL_EXPERT
-            REASON: User asking about vehicle performance and specifications
+            REASON: User asking about vehicles, showing popular options
             """)
         String classifyIntent(@UserMessage String context);
     }
@@ -51,15 +55,9 @@ public class IntentClassifierAgent implements AgentNode {
     public CustomerState process(CustomerState state) {
         String query = state.getCurrentQuery();
         if (query == null || query.isEmpty()) {
-            // If no profile exists, start with customer profiler
-            if (state.getCustomerProfile() == null) {
-                state.setNextAgent("CUSTOMER_PROFILER");
-                state.setRoutingReason("No customer profile found, starting with profiling");
-            } else {
-                // If we have a profile, go to technical expert
-                state.setNextAgent("TECHNICAL_EXPERT");
-                state.setRoutingReason("Customer profile exists, showing vehicle options");
-            }
+            // Always default to technical expert to show options
+            state.setNextAgent("TECHNICAL_EXPERT");
+            state.setRoutingReason("Showing popular vehicle options");
             return state;
         }
         

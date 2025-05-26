@@ -88,15 +88,14 @@ public class GMVehicleGraphAgent {
     public CustomerState startNewConversation() {
         CustomerState state = new CustomerState();
         state.addToConversationHistory(
-            "GM Vehicle Assistant: Hello! I'm your GM vehicle selection assistant. " +
-            "I have a team of specialists ready to help you:\n" +
-            "- Customer Profiler to understand your needs\n" +
-            "- Technical Expert for vehicle specifications\n" +
-            "- Financial Advisor for financing options\n" +
-            "- Availability Coordinator for inventory and test drives\n" +
-            "- Negotiation Coach for pricing strategy\n" +
-            "- EV Specialist for electric vehicles\n\n" +
-            "What can I help you with today?"
+            "GM Vehicle Assistant: Hello! I'm here to help you find the perfect GM vehicle. " +
+            "You can:\n" +
+            "• Ask about specific vehicles (e.g., \"Tell me about the Silverado\")\n" +
+            "• Compare models (e.g., \"Compare Tahoe vs Traverse\")\n" +
+            "• Get recommendations (e.g., \"Best SUV under $50k\")\n" +
+            "• Check financing options\n" +
+            "• Schedule test drives\n\n" +
+            "What would you like to know?"
         );
         return state;
     }

@@ -10,6 +10,8 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Customer Profiler Agent - Understands customer needs and builds profiles
@@ -67,28 +69,77 @@ public class CustomerProfilerAgent implements AgentNode {
             }
             return categories;
         }
+        
+        @Tool("Create a basic profile with minimal information")
+        public CustomerProfile createQuickProfile(
+                @P("Budget range or 0 if not specified") double budget,
+                @P("Vehicle size preference or 'any'") String vehicleSize) {
+            logToolCall("createQuickProfile", "budget", budget, "vehicleSize", vehicleSize);
+            
+            // Determine budget range
+            double budgetMin = budget > 0 ? budget * 0.8 : 25000;
+            double budgetMax = budget > 0 ? budget * 1.2 : 80000;
+            
+            // Determine categories based on size preference
+            List<VehicleCategory> categories = new ArrayList<>();
+            if (vehicleSize.toLowerCase().contains("small") || vehicleSize.toLowerCase().contains("compact")) {
+                categories.add(VehicleCategory.SEDAN);
+            } else if (vehicleSize.toLowerCase().contains("large") || vehicleSize.toLowerCase().contains("full")) {
+                categories.add(VehicleCategory.TRUCK);
+                categories.add(VehicleCategory.SUV);
+            } else if (vehicleSize.toLowerCase().contains("suv")) {
+                categories.add(VehicleCategory.SUV);
+            } else if (vehicleSize.toLowerCase().contains("truck")) {
+                categories.add(VehicleCategory.TRUCK);
+            } else {
+                // Default to showing variety
+                categories.add(VehicleCategory.SUV);
+                categories.add(VehicleCategory.TRUCK);
+                categories.add(VehicleCategory.SEDAN);
+            }
+            
+            CustomerProfile profile = new CustomerProfile(
+                0, // unknown family size
+                "general", // general usage
+                Arrays.asList("value", "reliability"), // default preferences
+                budgetMin,
+                budgetMax,
+                categories,
+                false, // no towing by default
+                false, // no off-road by default
+                "gasoline" // default fuel preference
+            );
+            
+            if (state != null) {
+                state.setCustomerProfile(profile);
+            }
+            return profile;
+        }
     }
     
     interface ProfilerAssistant {
         @SystemMessage("""
             You are a customer profiling specialist for GM vehicles.
-            Your job is to understand customer needs and create detailed profiles.
+            Your job is to understand customer needs with MINIMAL questions.
             
-            IMPORTANT: Check if a customer profile already exists before asking questions.
-            If profile information is already available, acknowledge it and only ask for missing details.
+            IMPORTANT RULES:
+            1. If a customer profile already exists, DO NOT ask any questions - just confirm and move on
+            2. Ask MAXIMUM 2 questions at a time
+            3. Focus on the MOST essential information first:
+               - What's your budget range?
+               - What size vehicle do you need (compact, midsize, full-size)?
+            4. Always offer: "Or if you'd prefer, I can show you some popular options right away"
+            5. If the user seems reluctant or gives short answers, immediately offer to skip profiling
+            6. Extract information from context clues rather than asking directly when possible
             
-            Information to gather (if not already provided):
-            - Family size and composition
-            - Daily commute and weekend usage
-            - Must-have features
-            - Budget constraints
-            - Lifestyle and activities
-            - Towing or cargo needs
-            - Fuel preferences
+            Essential information only:
+            - Budget range (most important)
+            - Vehicle size preference
+            - Primary use (only if not obvious)
             
-            Use the tools to analyze needs and build profiles.
-            Be friendly and conversational while gathering information.
-            Always store the profile for other agents to use.
+            Use the tools to create a basic profile even with minimal information.
+            Be concise and respectful of the user's time.
+            NEVER ask more than 2 questions in one response.
             """)
         String profileCustomer(@UserMessage String conversation);
     }

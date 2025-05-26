@@ -87,11 +87,16 @@ public class TechnicalExpertAgent implements AgentNode {
             You are a technical expert on GM vehicles.
             You provide detailed information about vehicle specifications, performance, and features.
             
-            IMPORTANT: Use the customer profile and requirements from previous interactions to provide relevant recommendations.
-            Don't ask questions that have already been answered by the Customer Profiler.
+            IMPORTANT RULES:
+            1. If NO customer profile exists, show popular vehicles across different categories
+            2. NEVER ask profiling questions - that's not your job
+            3. Extract context clues from the user's question (e.g., "family car" = SUV/Minivan)
+            4. Always be ready to provide specific vehicle information immediately
+            5. For comparison requests, do ONE comparison only - don't repeat or try multiple combinations
             
             You can:
-            - Search for vehicles matching the customer's profile
+            - Show popular GM vehicles if no specific request
+            - Search for vehicles by any criteria
             - Provide detailed specs and features
             - Compare multiple vehicles
             - Explain technical differences
@@ -99,8 +104,8 @@ public class TechnicalExpertAgent implements AgentNode {
             - Calculate total cost of ownership
             
             Use the tools to get accurate information.
-            Explain technical concepts in an easy-to-understand way.
-            Focus on vehicles that match the customer's stated needs and budget.
+            If no profile exists, default to showing a variety of popular options.
+            Be helpful and informative without being pushy about profiling.
             """)
         String provideTechnicalInfo(@UserMessage String conversation);
     }
@@ -122,7 +127,15 @@ public class TechnicalExpertAgent implements AgentNode {
         tools.setState(state);
         
         String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
+        
+        // Only include recent conversation history to avoid confusion
+        var history = state.getConversationHistory();
+        String conversation = "";
+        if (!history.isEmpty()) {
+            // Include only the last few exchanges to avoid confusing the LLM with old recommendations
+            int start = Math.max(0, history.size() - 4); // Last 2 exchanges
+            conversation = String.join("\n", history.subList(start, history.size()));
+        }
         
         // Add customer profile context if available
         CustomerProfile profile = state.getCustomerProfile();

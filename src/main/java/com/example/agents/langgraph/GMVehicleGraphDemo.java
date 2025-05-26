@@ -57,8 +57,8 @@ public class GMVehicleGraphDemo {
             }
             
             try {
-                // Process with auto-routing through multiple agents
-                String response = agent.processWithAutoRouting(userInput, state, 3);
+                // Process query with single agent routing (most queries only need one step)
+                String response = agent.processQuery(userInput, state);
                 
                 // Extract just the agent response part
                 String[] parts = response.split(": ", 2);
