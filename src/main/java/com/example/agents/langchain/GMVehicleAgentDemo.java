@@ -19,11 +19,15 @@ public class GMVehicleAgentDemo {
         String apiKey = System.getenv("OPENAI_API_KEY");
 
         if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException("Warning: OPENAI_API_KEY not found. Using mock responses for demo.");
+            System.err.println("Error: OPENAI_API_KEY environment variable not set");
+            System.err.println("Please set your OpenAI API key:");
+            System.err.println("  export OPENAI_API_KEY=your-api-key");
+            return;
         }
+        
         model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gpt-4")
+                .modelName("gpt-4o-mini")
                 .temperature(0.7)
                 .build();
 

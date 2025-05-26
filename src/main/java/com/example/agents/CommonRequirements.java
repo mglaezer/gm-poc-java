@@ -257,13 +257,173 @@ public interface CommonRequirements {
         String value
     ) {}
     
+    record CustomerProfile(
+        int familySize,
+        String primaryUsage,
+        List<String> preferences,
+        double budgetMin,
+        double budgetMax,
+        List<VehicleCategory> preferredCategories,
+        boolean needsTowing,
+        boolean needsOffRoad,
+        String fuelPreference
+    ) {}
+    
+    record CustomerRequirements(
+        int familySize,
+        String dailyCommute,
+        String weekendUsage,
+        List<String> mustHaveFeatures,
+        double budget,
+        String creditScore
+    ) {}
+    
+    record TotalCostOfOwnership(
+        String vehicleId,
+        double purchasePrice,
+        double totalFuelCost,
+        double totalMaintenanceCost,
+        double totalInsuranceCost,
+        double depreciation,
+        double totalCost,
+        double costPerMile
+    ) {}
+    
+    record SafetyRatings(
+        String vehicleId,
+        int overallRating,
+        int frontalCrashRating,
+        int sideCrashRating,
+        int rolloverRating,
+        List<String> safetyFeatures,
+        boolean topSafetyPick
+    ) {}
+    
+    record InsuranceCost(
+        String vehicleId,
+        double monthlyPremium,
+        double annualPremium,
+        String coverageLevel,
+        List<String> discountsApplied
+    ) {}
+    
+    record DriverProfile(
+        int age,
+        String gender,
+        int yearsLicensed,
+        int accidentsLast5Years,
+        int ticketsLast5Years,
+        String creditScore
+    ) {}
+    
+    record BudgetRecommendation(
+        double recommendedVehiclePrice,
+        double recommendedDownPayment,
+        double maxMonthlyPayment,
+        String affordabilityRating,
+        List<String> suggestions
+    ) {}
+    
+    record VehicleTradeIn(
+        VehicleMake make,
+        String model,
+        int year,
+        int mileage,
+        String condition,
+        List<String> issues
+    ) {}
+    
+    record TradeInValue(
+        double fairValue,
+        double dealerValue,
+        double privatePartyValue,
+        String marketDemand,
+        List<String> valueFactors
+    ) {}
+    
+    record MarketConditions(
+        String inventoryLevel,
+        String demandLevel,
+        boolean endOfMonth,
+        boolean endOfYear,
+        String season
+    ) {}
+    
+    record NegotiationStrategy(
+        double targetPrice,
+        double walkAwayPrice,
+        List<String> negotiationPoints,
+        String bestTimeToNegotiate,
+        List<String> leveragePoints
+    ) {}
+    
+    record Incentive(
+        String type,
+        double amount,
+        String description,
+        LocalDateTime expirationDate,
+        List<String> eligibilityRequirements
+    ) {}
+    
+    record ChargingCost(
+        double dailyCost,
+        double monthlyCost,
+        double costPerMile,
+        double homeChargingCost,
+        double publicChargingCost
+    ) {}
+    
+    record ChargingStation(
+        String name,
+        String address,
+        double distance,
+        String chargerType,
+        int availablePorts,
+        double costPerKwh,
+        String network
+    ) {}
+    
+    record RangeEstimate(
+        double baseRange,
+        double adjustedRange,
+        double rangeReduction,
+        List<String> affectingFactors,
+        boolean canCompleteTrip
+    ) {}
+    
     interface Tools {
+        // Existing tools
         List<VehicleInfo> searchVehicleInventory(SearchCriteria criteria);
         VehicleInfo getVehicleDetails(String vehicleId);
         VehicleComparison compareVehicles(List<String> vehicleIds);
         List<VehicleAvailability> checkAvailability(String vehicleId, String zipCode);
         FinancingOption calculateFinancing(String vehicleId, double downPayment, int termMonths, String creditScore);
         TestDriveAppointment scheduleTestDrive(String vehicleId, String dealerId, LocalDateTime dateTime, String customerName, String customerPhone);
+        
+        // Customer Profiler Tools
+        CustomerProfile analyzeCustomerNeeds(int familySize, String primaryUsage, List<String> preferences);
+        CustomerProfile buildCustomerProfile(CustomerRequirements requirements);
+        List<VehicleCategory> suggestVehicleCategories(CustomerProfile profile);
+        
+        // Technical Expert Tools
+        VehicleComparison compareToCompetitors(String vehicleId);
+        TotalCostOfOwnership calculateTotalCostOfOwnership(String vehicleId, int years);
+        SafetyRatings checkSafetyRatings(String vehicleId);
+        
+        // Financial Advisor Tools
+        List<FinancingOption> compareFinancingOptions(String vehicleId, String creditScore);
+        InsuranceCost calculateInsuranceCosts(String vehicleId, String zipCode, DriverProfile driverProfile);
+        BudgetRecommendation suggestBudgetAllocation(double monthlyIncome, double monthlyExpenses);
+        
+        // Negotiation Coach Tools
+        TradeInValue calculateTradeInValue(VehicleTradeIn tradeIn);
+        NegotiationStrategy suggestNegotiationStrategy(String vehicleId, MarketConditions marketConditions);
+        List<Incentive> findIncentivesAndRebates(String vehicleId, String zipCode);
+        
+        // EV Specialist Tools
+        ChargingCost calculateChargingCosts(String vehicleId, String zipCode, double dailyMiles);
+        List<ChargingStation> findChargingStations(String zipCode, double radiusMiles);
+        RangeEstimate estimateRangeForTrip(String vehicleId, double tripDistance, String weatherCondition);
     }
     
     interface AgentCapabilities {
