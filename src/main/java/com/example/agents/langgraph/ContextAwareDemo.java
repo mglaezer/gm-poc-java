@@ -20,7 +20,7 @@ public class ContextAwareDemo {
         // Create model
         ChatLanguageModel model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gpt-4")
+                .modelName("gpt-4.1")
                 .temperature(0.7)
                 .build();
         

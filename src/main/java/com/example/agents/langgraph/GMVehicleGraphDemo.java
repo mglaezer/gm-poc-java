@@ -26,7 +26,7 @@ public class GMVehicleGraphDemo {
         
         model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gpt-4o-mini")
+                .modelName("gpt-4.1")
                 .temperature(0.7)
                 .build();
         

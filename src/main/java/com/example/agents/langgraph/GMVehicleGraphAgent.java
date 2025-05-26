@@ -18,7 +18,7 @@ public class GMVehicleGraphAgent {
     public GMVehicleGraphAgent() {
         this(OpenAiChatModel.builder()
                 .apiKey(System.getenv("OPENAI_API_KEY"))
-                .modelName("gpt-4o-mini")
+                .modelName("gpt-4.1")
                 .temperature(0.7)
                 .build());
     }
