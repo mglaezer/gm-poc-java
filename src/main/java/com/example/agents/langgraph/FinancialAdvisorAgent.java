@@ -4,7 +4,7 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -95,10 +95,10 @@ public class FinancialAdvisorAgent implements AgentNode {
     private final FinancialAssistant assistant;
     private final FinancialTools tools;
     
-    public FinancialAdvisorAgent(ChatLanguageModel model) {
+    public FinancialAdvisorAgent(ChatModel model) {
         this.tools = new FinancialTools();
         this.assistant = AiServices.builder(FinancialAssistant.class)
-                .chatLanguageModel(model)
+                .chatModel(model)
                 .tools(tools)
                 .build();
     }

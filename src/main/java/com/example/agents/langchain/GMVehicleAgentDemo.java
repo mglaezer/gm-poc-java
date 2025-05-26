@@ -1,6 +1,6 @@
 package com.example.agents.langchain;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import java.util.Scanner;
@@ -15,7 +15,7 @@ public class GMVehicleAgentDemo {
         System.out.println("=== GM Vehicle Selection Agent Demo ===");
         System.out.println("Initializing agent...\n");
 
-        ChatLanguageModel model;
+        ChatModel model;
         String apiKey = System.getenv("OPENAI_API_KEY");
 
         if (apiKey == null || apiKey.isEmpty()) {

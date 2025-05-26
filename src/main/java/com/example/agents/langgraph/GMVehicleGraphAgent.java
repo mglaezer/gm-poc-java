@@ -1,6 +1,6 @@
 package com.example.agents.langgraph;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import java.util.HashMap;
@@ -13,7 +13,7 @@ public class GMVehicleGraphAgent {
     
     private final Map<String, AgentNode> agents;
     private final IntentClassifierAgent router;
-    private final ChatLanguageModel model;
+    private final ChatModel model;
     
     public GMVehicleGraphAgent() {
         this(OpenAiChatModel.builder()
@@ -23,7 +23,7 @@ public class GMVehicleGraphAgent {
                 .build());
     }
     
-    public GMVehicleGraphAgent(ChatLanguageModel model) {
+    public GMVehicleGraphAgent(ChatModel model) {
         this.model = model;
         this.agents = new HashMap<>();
         

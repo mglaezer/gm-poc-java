@@ -4,7 +4,7 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -76,10 +76,10 @@ public class NegotiationCoachAgent implements AgentNode {
     private final NegotiationAssistant assistant;
     private final NegotiationTools tools;
     
-    public NegotiationCoachAgent(ChatLanguageModel model) {
+    public NegotiationCoachAgent(ChatModel model) {
         this.tools = new NegotiationTools();
         this.assistant = AiServices.builder(NegotiationAssistant.class)
-                .chatLanguageModel(model)
+                .chatModel(model)
                 .tools(tools)
                 .build();
     }

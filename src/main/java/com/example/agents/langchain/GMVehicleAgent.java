@@ -2,7 +2,7 @@ package com.example.agents.langchain;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 
@@ -32,19 +32,19 @@ public class GMVehicleAgent {
         String chat(String userMessage);
     }
 
-    private final ChatLanguageModel model;
+    private final ChatModel model;
     private final ChatMemory chatMemory;
     private final VehicleAssistant assistant;
     private final VehicleSearchTools tools;
 
 
-    public GMVehicleAgent(ChatLanguageModel model) {
+    public GMVehicleAgent(ChatModel model) {
         this.model = model;
         this.chatMemory = MessageWindowChatMemory.withMaxMessages(100);
         this.tools = new VehicleSearchTools();
 
         this.assistant = AiServices.builder(VehicleAssistant.class)
-                .chatLanguageModel(model)
+                .chatModel(model)
                 .chatMemory(chatMemory)
                 .tools(tools)
                 .build();

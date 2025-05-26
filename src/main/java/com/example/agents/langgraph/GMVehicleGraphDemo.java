@@ -1,6 +1,6 @@
 package com.example.agents.langgraph;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import java.util.Scanner;
@@ -14,7 +14,7 @@ public class GMVehicleGraphDemo {
         System.out.println("=== GM Vehicle Selection Graph Agent Demo ===");
         System.out.println("Using multi-agent system with specialized experts\n");
         
-        ChatLanguageModel model;
+        ChatModel model;
         String apiKey = System.getenv("OPENAI_API_KEY");
         
         if (apiKey == null || apiKey.isEmpty()) {

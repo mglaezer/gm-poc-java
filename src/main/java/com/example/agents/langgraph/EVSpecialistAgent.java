@@ -4,7 +4,7 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -67,10 +67,10 @@ public class EVSpecialistAgent implements AgentNode {
     private final EVAssistant assistant;
     private final EVTools tools;
     
-    public EVSpecialistAgent(ChatLanguageModel model) {
+    public EVSpecialistAgent(ChatModel model) {
         this.tools = new EVTools();
         this.assistant = AiServices.builder(EVAssistant.class)
-                .chatLanguageModel(model)
+                .chatModel(model)
                 .tools(tools)
                 .build();
     }

@@ -1,6 +1,6 @@
 package com.example.agents.langgraph;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 /**
@@ -18,7 +18,7 @@ public class ContextAwareDemo {
         }
         
         // Create model
-        ChatLanguageModel model = OpenAiChatModel.builder()
+        ChatModel model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName("gpt-4.1")
                 .temperature(0.7)

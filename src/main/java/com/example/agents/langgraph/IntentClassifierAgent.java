@@ -1,6 +1,6 @@
 package com.example.agents.langgraph;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -41,9 +41,9 @@ public class IntentClassifierAgent implements AgentNode {
     
     private final IntentClassifier classifier;
     
-    public IntentClassifierAgent(ChatLanguageModel model) {
+    public IntentClassifierAgent(ChatModel model) {
         this.classifier = AiServices.builder(IntentClassifier.class)
-                .chatLanguageModel(model)
+                .chatModel(model)
                 .build();
     }
     
