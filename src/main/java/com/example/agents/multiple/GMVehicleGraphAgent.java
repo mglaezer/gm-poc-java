@@ -1,10 +1,6 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Main GM Vehicle Graph Agent that orchestrates multiple specialized agents

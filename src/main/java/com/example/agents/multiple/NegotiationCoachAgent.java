@@ -1,4 +1,4 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
@@ -10,7 +10,6 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Negotiation Coach Agent - Helps with pricing strategy and trade-ins

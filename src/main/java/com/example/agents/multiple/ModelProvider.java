@@ -1,4 +1,4 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;

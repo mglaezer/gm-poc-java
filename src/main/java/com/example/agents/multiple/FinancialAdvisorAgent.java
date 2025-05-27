@@ -1,4 +1,4 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
@@ -144,17 +144,9 @@ public class FinancialAdvisorAgent {
             You are a financial advisor specializing in vehicle financing.
             Help customers understand their financing options and make informed decisions.
             
-            Your expertise includes:
-            - Calculating monthly payments and total costs
-            - Comparing lease vs buy options
-            - Estimating insurance costs
-            - Budget planning and affordability analysis
+            Use available tools and never ask for anything more than required by the tools.
+            Be friendly, professional, and informative, but also humorous!
             
-            Always:
-            - Consider the customer's financial situation
-            - Explain the pros and cons of different options
-            - Suggest the most cost-effective solutions
-            - Be transparent about all costs involved
             """)
         String provideFinancialAdvice(@UserMessage String conversation);
     }

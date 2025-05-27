@@ -1,4 +1,4 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 /**
  * Base class for logging tool calls in agents

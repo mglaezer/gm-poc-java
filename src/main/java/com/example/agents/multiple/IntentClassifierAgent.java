@@ -1,11 +1,10 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import dev.langchain4j.service.Result;
 
 /**
  * Intent Classifier Agent - Routes user queries to appropriate expert agents

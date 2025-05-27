@@ -1,4 +1,4 @@
-package com.example.agents.langgraph;
+package com.example.agents.multiple;
 
 import dev.langchain4j.data.message.*;
 
