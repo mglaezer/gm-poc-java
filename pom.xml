@@ -66,6 +66,13 @@
             <version>${langchain4jbeta.version}</version>
         </dependency>
 
+        <!-- Google ADK -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-adk</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
