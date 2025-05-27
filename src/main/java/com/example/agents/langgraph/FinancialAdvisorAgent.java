@@ -33,27 +33,25 @@ public class FinancialAdvisorAgent {
             logToolCall("calculateFinancing", "vehicleId", vehicleId, "downPayment", "$" + downPayment, "termMonths", termMonths);
             FinancingOption option = tools.calculateFinancing(vehicleId, downPayment, termMonths, creditScore);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId)
-                  .append(", downPayment=$").append(String.format("%.0f", downPayment))
-                  .append(", termMonths=").append(termMonths)
-                  .append(", creditScore=").append(creditScore).append("\n");
-                
-                if (option == null) {
-                    sb.append("Unable to calculate financing - vehicle not found");
-                } else {
-                    sb.append(String.format("Financing Details:\n"));
-                    sb.append(String.format("Vehicle Price: $%,.0f\n", option.vehiclePrice()));
-                    sb.append(String.format("Down Payment: $%,.0f (%.0f%%)\n", 
-                        option.downPayment(), (option.downPayment() / option.vehiclePrice() * 100)));
-                    sb.append(String.format("Loan Amount: $%,.0f\n", option.vehiclePrice() - option.downPayment()));
-                    sb.append(String.format("Term: %d months | Rate: %.1f%%\n", option.termMonths(), option.interestRate()));
-                    sb.append(String.format("Monthly Payment: $%,.2f\n", option.monthlyPayment()));
-                    sb.append(String.format("Total Cost: $%,.0f", option.totalCost()));
-                }
-                state.addToolResult("calculateFinancing", sb.toString());
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId)
+              .append(", downPayment=$").append(String.format("%.0f", downPayment))
+              .append(", termMonths=").append(termMonths)
+              .append(", creditScore=").append(creditScore).append("\n");
+            
+            if (option == null) {
+                sb.append("Unable to calculate financing - vehicle not found");
+            } else {
+                sb.append(String.format("Financing Details:\n"));
+                sb.append(String.format("Vehicle Price: $%,.0f\n", option.vehiclePrice()));
+                sb.append(String.format("Down Payment: $%,.0f (%.0f%%)\n", 
+                    option.downPayment(), (option.downPayment() / option.vehiclePrice() * 100)));
+                sb.append(String.format("Loan Amount: $%,.0f\n", option.vehiclePrice() - option.downPayment()));
+                sb.append(String.format("Term: %d months | Rate: %.1f%%\n", option.termMonths(), option.interestRate()));
+                sb.append(String.format("Monthly Payment: $%,.2f\n", option.monthlyPayment()));
+                sb.append(String.format("Total Cost: $%,.0f", option.totalCost()));
             }
+            state.addToolResult("calculateFinancing", sb.toString());
             return option;
         }
         
@@ -63,22 +61,20 @@ public class FinancialAdvisorAgent {
                 @P("Credit score") String creditScore) {
             List<FinancingOption> options = tools.compareFinancingOptions(vehicleId, creditScore);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId)
-                  .append(", creditScore=").append(creditScore).append("\n");
-                
-                if (options.isEmpty()) {
-                    sb.append("No financing options available");
-                } else {
-                    sb.append("Financing Options Comparison:\n");
-                    for (FinancingOption opt : options) {
-                        sb.append(String.format("- %d months: $%,.2f/mo (%.1f%% APR, $%,.0f down)\n",
-                            opt.termMonths(), opt.monthlyPayment(), opt.interestRate(), opt.downPayment()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId)
+              .append(", creditScore=").append(creditScore).append("\n");
+            
+            if (options.isEmpty()) {
+                sb.append("No financing options available");
+            } else {
+                sb.append("Financing Options Comparison:\n");
+                for (FinancingOption opt : options) {
+                    sb.append(String.format("- %d months: $%,.2f/mo (%.1f%% APR, $%,.0f down)\n",
+                        opt.termMonths(), opt.monthlyPayment(), opt.interestRate(), opt.downPayment()));
                 }
-                state.addToolResult("compareFinancing", sb.toString());
             }
+            state.addToolResult("compareFinancing", sb.toString());
             return options;
         }
         
@@ -91,26 +87,24 @@ public class FinancialAdvisorAgent {
             InsuranceCost insurance = tools.calculateInsuranceCosts(vehicleId, "00000",
                 new DriverProfile(driverAge, "N/A", 10, 0, 0, drivingRecord));
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId)
-                  .append(", driverAge=").append(driverAge)
-                  .append(", drivingRecord=").append(drivingRecord)
-                  .append(", coverage=").append(coverageLevel).append("\n");
-                
-                if (insurance == null) {
-                    sb.append("Unable to calculate insurance - vehicle not found");
-                } else {
-                    sb.append(String.format("Insurance Estimate:\n"));
-                    sb.append(String.format("Monthly Premium: $%.2f\n", insurance.monthlyPremium()));
-                    sb.append(String.format("Annual Premium: $%,.0f\n", insurance.annualPremium()));
-                    sb.append(String.format("Coverage Level: %s\n", insurance.coverageLevel()));
-                    if (!insurance.discountsApplied().isEmpty()) {
-                        sb.append("Discounts Applied: ").append(String.join(", ", insurance.discountsApplied()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId)
+              .append(", driverAge=").append(driverAge)
+              .append(", drivingRecord=").append(drivingRecord)
+              .append(", coverage=").append(coverageLevel).append("\n");
+            
+            if (insurance == null) {
+                sb.append("Unable to calculate insurance - vehicle not found");
+            } else {
+                sb.append(String.format("Insurance Estimate:\n"));
+                sb.append(String.format("Monthly Premium: $%.2f\n", insurance.monthlyPremium()));
+                sb.append(String.format("Annual Premium: $%,.0f\n", insurance.annualPremium()));
+                sb.append(String.format("Coverage Level: %s\n", insurance.coverageLevel()));
+                if (!insurance.discountsApplied().isEmpty()) {
+                    sb.append("Discounts Applied: ").append(String.join(", ", insurance.discountsApplied()));
                 }
-                state.addToolResult("calculateInsurance", sb.toString());
             }
+            state.addToolResult("calculateInsurance", sb.toString());
             return insurance;
         }
         
@@ -121,28 +115,26 @@ public class FinancialAdvisorAgent {
                 @P("Current car payment") double currentCarPayment) {
             BudgetRecommendation budget = tools.suggestBudgetAllocation(annualIncome / 12, monthlyExpenses);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: annualIncome=$").append(String.format("%.0f", annualIncome))
-                  .append(", monthlyExpenses=$").append(String.format("%.0f", monthlyExpenses))
-                  .append(", currentCarPayment=$").append(String.format("%.0f", currentCarPayment)).append("\n");
-                
-                if (budget == null) {
-                    sb.append("Unable to calculate budget recommendation");
-                } else {
-                    sb.append(String.format("Budget Recommendation:\n"));
-                    sb.append(String.format("Monthly Income: $%,.0f\n", annualIncome / 12));
-                    sb.append(String.format("Monthly Expenses: $%,.0f\n", monthlyExpenses));
-                    sb.append(String.format("Recommended Max Vehicle Price: $%,.0f\n", budget.recommendedVehiclePrice()));
-                    sb.append(String.format("Recommended Down Payment: $%,.0f\n", budget.recommendedDownPayment()));
-                    sb.append(String.format("Max Monthly Payment: $%,.0f\n", budget.maxMonthlyPayment()));
-                    sb.append(String.format("Affordability Rating: %s\n", budget.affordabilityRating()));
-                    if (!budget.suggestions().isEmpty()) {
-                        sb.append("Suggestions: ").append(String.join("; ", budget.suggestions()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: annualIncome=$").append(String.format("%.0f", annualIncome))
+              .append(", monthlyExpenses=$").append(String.format("%.0f", monthlyExpenses))
+              .append(", currentCarPayment=$").append(String.format("%.0f", currentCarPayment)).append("\n");
+            
+            if (budget == null) {
+                sb.append("Unable to calculate budget recommendation");
+            } else {
+                sb.append(String.format("Budget Recommendation:\n"));
+                sb.append(String.format("Monthly Income: $%,.0f\n", annualIncome / 12));
+                sb.append(String.format("Monthly Expenses: $%,.0f\n", monthlyExpenses));
+                sb.append(String.format("Recommended Max Vehicle Price: $%,.0f\n", budget.recommendedVehiclePrice()));
+                sb.append(String.format("Recommended Down Payment: $%,.0f\n", budget.recommendedDownPayment()));
+                sb.append(String.format("Max Monthly Payment: $%,.0f\n", budget.maxMonthlyPayment()));
+                sb.append(String.format("Affordability Rating: %s\n", budget.affordabilityRating()));
+                if (!budget.suggestions().isEmpty()) {
+                    sb.append("Suggestions: ").append(String.join("; ", budget.suggestions()));
                 }
-                state.addToolResult("suggestBudget", sb.toString());
             }
+            state.addToolResult("suggestBudget", sb.toString());
             return budget;
         }
     }

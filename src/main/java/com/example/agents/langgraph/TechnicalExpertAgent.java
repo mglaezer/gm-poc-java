@@ -44,25 +44,23 @@ public class TechnicalExpertAgent {
             List<VehicleInfo> results = tools.searchVehicleInventory(criteria);
             
             // Log results as ToolExecutionResultMessage
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: category=").append(category != null ? category : "all")
-                  .append(", price=").append(priceRange)
-                  .append(", minMPG=").append(minMpg != null ? minMpg : "any")
-                  .append(", fuel=").append(fuelType != null ? fuelType : "any").append("\n");
-                
-                if (results.isEmpty()) {
-                    sb.append("No vehicles found matching criteria");
-                } else {
-                    sb.append("Found ").append(results.size()).append(" vehicles:\n");
-                    for (VehicleInfo v : results) {
-                        sb.append(String.format("- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %dmpg city/%dmpg hwy\n",
-                            v.id(), v.make().getDisplayName(), v.model(), v.trim(), v.year(),
-                            v.bodyStyle(), v.price(), v.fuelType(), v.mpgCity(), v.mpgHighway()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: category=").append(category != null ? category : "all")
+              .append(", price=").append(priceRange)
+              .append(", minMPG=").append(minMpg != null ? minMpg : "any")
+              .append(", fuel=").append(fuelType != null ? fuelType : "any").append("\n");
+            
+            if (results.isEmpty()) {
+                sb.append("No vehicles found matching criteria");
+            } else {
+                sb.append("Found ").append(results.size()).append(" vehicles:\n");
+                for (VehicleInfo v : results) {
+                    sb.append(String.format("- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %dmpg city/%dmpg hwy\n",
+                        v.id(), v.make().getDisplayName(), v.model(), v.trim(), v.year(),
+                        v.bodyStyle(), v.price(), v.fuelType(), v.mpgCity(), v.mpgHighway()));
                 }
-                state.addToolResult("searchVehicles", sb.toString());
             }
+            state.addToolResult("searchVehicles", sb.toString());
             return results;
         }
         
@@ -90,37 +88,35 @@ public class TechnicalExpertAgent {
             }
             
             // Log detailed results to state as ToolExecutionResultMessage
-            if (state != null) {
-                StringBuilder resultDetails = new StringBuilder();
-                
-                if (results.isEmpty()) {
-                    resultDetails.append("No vehicles found for make: ").append(make);
-                    if (excludeEVs) {
-                        resultDetails.append(" (excluding EVs)");
-                    }
-                } else {
-                    resultDetails.append(String.format("Found %d %s vehicles", results.size(), make));
-                    if (excludeEVs) {
-                        resultDetails.append(" (excluding EVs)");
-                    }
-                    resultDetails.append(":\n");
-                    for (VehicleInfo vehicle : results) {
-                        resultDetails.append(String.format("- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d MPG city/%d MPG hwy\n",
-                            vehicle.id(), vehicle.make().getDisplayName(),
-                            vehicle.model(),
-                            vehicle.trim(),
-                            vehicle.year(),
-                            vehicle.bodyStyle(),
-                            vehicle.price(),
-                            vehicle.fuelType(),
-                            vehicle.mpgCity(),
-                            vehicle.mpgHighway()
-                        ));
-                    }
+            StringBuilder resultDetails = new StringBuilder();
+            
+            if (results.isEmpty()) {
+                resultDetails.append("No vehicles found for make: ").append(make);
+                if (excludeEVs) {
+                    resultDetails.append(" (excluding EVs)");
                 }
-                
-                state.addToolResult("searchVehiclesByMake", resultDetails.toString());
+            } else {
+                resultDetails.append(String.format("Found %d %s vehicles", results.size(), make));
+                if (excludeEVs) {
+                    resultDetails.append(" (excluding EVs)");
+                }
+                resultDetails.append(":\n");
+                for (VehicleInfo vehicle : results) {
+                    resultDetails.append(String.format("- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d MPG city/%d MPG hwy\n",
+                        vehicle.id(), vehicle.make().getDisplayName(),
+                        vehicle.model(),
+                        vehicle.trim(),
+                        vehicle.year(),
+                        vehicle.bodyStyle(),
+                        vehicle.price(),
+                        vehicle.fuelType(),
+                        vehicle.mpgCity(),
+                        vehicle.mpgHighway()
+                    ));
+                }
             }
+            
+            state.addToolResult("searchVehiclesByMake", resultDetails.toString());
             
             return results;
         }
@@ -129,29 +125,27 @@ public class TechnicalExpertAgent {
         public VehicleInfo getVehicleDetails(@P("Vehicle ID") String vehicleId) {
             VehicleInfo vehicle = tools.getVehicleDetails(vehicleId);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId).append("\n");
-                
-                if (vehicle == null) {
-                    sb.append("Vehicle not found with ID: ").append(vehicleId);
-                } else {
-                    sb.append(String.format("Vehicle Details:\nID: %s | %s %s %s (%d)\n", 
-                        vehicle.id(), vehicle.make().getDisplayName(), vehicle.model(), vehicle.trim(), vehicle.year()));
-                    sb.append(String.format("Price: $%,.0f | Body: %s | Engine: %s %.1fL\n",
-                        vehicle.price(), vehicle.bodyStyle(), vehicle.engineType(), vehicle.engineDisplacement()));
-                    sb.append(String.format("Power: %dhp/%dlb-ft | Drivetrain: %s %s | Fuel: %s\n",
-                        vehicle.horsepower(), vehicle.torque(), vehicle.drivetrain(), vehicle.transmissionType(), vehicle.fuelType()));
-                    sb.append(String.format("Economy: %d city/%d hwy MPG | Seats: %d | Cargo: %.1f cu ft\n",
-                        vehicle.mpgCity(), vehicle.mpgHighway(), vehicle.seatingCapacity(), vehicle.cargoVolume()));
-                    if (vehicle.range() != null) {
-                        sb.append(String.format("Electric Range: %d miles\n", vehicle.range()));
-                    }
-                    sb.append("Safety: ").append(String.join(", ", vehicle.safetyFeatures())).append("\n");
-                    sb.append("Tech: ").append(String.join(", ", vehicle.infotainmentFeatures()));
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId).append("\n");
+            
+            if (vehicle == null) {
+                sb.append("Vehicle not found with ID: ").append(vehicleId);
+            } else {
+                sb.append(String.format("Vehicle Details:\nID: %s | %s %s %s (%d)\n", 
+                    vehicle.id(), vehicle.make().getDisplayName(), vehicle.model(), vehicle.trim(), vehicle.year()));
+                sb.append(String.format("Price: $%,.0f | Body: %s | Engine: %s %.1fL\n",
+                    vehicle.price(), vehicle.bodyStyle(), vehicle.engineType(), vehicle.engineDisplacement()));
+                sb.append(String.format("Power: %dhp/%dlb-ft | Drivetrain: %s %s | Fuel: %s\n",
+                    vehicle.horsepower(), vehicle.torque(), vehicle.drivetrain(), vehicle.transmissionType(), vehicle.fuelType()));
+                sb.append(String.format("Economy: %d city/%d hwy MPG | Seats: %d | Cargo: %.1f cu ft\n",
+                    vehicle.mpgCity(), vehicle.mpgHighway(), vehicle.seatingCapacity(), vehicle.cargoVolume()));
+                if (vehicle.range() != null) {
+                    sb.append(String.format("Electric Range: %d miles\n", vehicle.range()));
                 }
-                state.addToolResult("getVehicleDetails", sb.toString());
+                sb.append("Safety: ").append(String.join(", ", vehicle.safetyFeatures())).append("\n");
+                sb.append("Tech: ").append(String.join(", ", vehicle.infotainmentFeatures()));
             }
+            state.addToolResult("getVehicleDetails", sb.toString());
             return vehicle;
         }
         
@@ -162,20 +156,18 @@ public class TechnicalExpertAgent {
             logToolCall("searchByMakeModel", "make", make, "model", model);
             VehicleInfo vehicle = tools.getVehicleByMakeAndModel(make, model);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: make=").append(make).append(", model=").append(model).append("\n");
-                
-                if (vehicle == null) {
-                    sb.append("No vehicle found for ").append(make).append(" ").append(model);
-                } else {
-                    sb.append(String.format("Found: ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d/%d MPG",
-                        vehicle.id(), vehicle.make().getDisplayName(), vehicle.model(), vehicle.trim(), vehicle.year(),
-                        vehicle.bodyStyle(), vehicle.price(), vehicle.fuelType(), 
-                        vehicle.mpgCity(), vehicle.mpgHighway()));
-                }
-                state.addToolResult("searchByMakeModel", sb.toString());
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: make=").append(make).append(", model=").append(model).append("\n");
+            
+            if (vehicle == null) {
+                sb.append("No vehicle found for ").append(make).append(" ").append(model);
+            } else {
+                sb.append(String.format("Found: ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d/%d MPG",
+                    vehicle.id(), vehicle.make().getDisplayName(), vehicle.model(), vehicle.trim(), vehicle.year(),
+                    vehicle.bodyStyle(), vehicle.price(), vehicle.fuelType(), 
+                    vehicle.mpgCity(), vehicle.mpgHighway()));
             }
+            state.addToolResult("searchByMakeModel", sb.toString());
             return vehicle;
         }
         
@@ -184,26 +176,24 @@ public class TechnicalExpertAgent {
             logToolCall("compareVehicles", "vehicleIds", vehicleIds);
             VehicleComparison comparison = tools.compareVehicles(vehicleIds);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleIds=").append(vehicleIds).append("\n");
-                
-                if (comparison == null || comparison.vehicles().isEmpty()) {
-                    sb.append("Unable to compare vehicles - invalid IDs");
-                } else {
-                    sb.append("Comparing ").append(comparison.vehicles().size()).append(" vehicles:\n");
-                    for (VehicleInfo v : comparison.vehicles()) {
-                        sb.append(String.format("- ID: %s | %s %s %s (%d) - $%,.0f\n",
-                            v.id(), v.make().getDisplayName(), v.model(), v.trim(), v.year(), v.price()));
-                    }
-                    sb.append("\nComparison Points:\n");
-                    for (ComparisonPoint point : comparison.comparisonPoints()) {
-                        sb.append(String.format("- %s: %s (Vehicle: %s)\n", 
-                            point.category(), point.value(), point.vehicleId()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleIds=").append(vehicleIds).append("\n");
+            
+            if (comparison == null || comparison.vehicles().isEmpty()) {
+                sb.append("Unable to compare vehicles - invalid IDs");
+            } else {
+                sb.append("Comparing ").append(comparison.vehicles().size()).append(" vehicles:\n");
+                for (VehicleInfo v : comparison.vehicles()) {
+                    sb.append(String.format("- ID: %s | %s %s %s (%d) - $%,.0f\n",
+                        v.id(), v.make().getDisplayName(), v.model(), v.trim(), v.year(), v.price()));
                 }
-                state.addToolResult("compareVehicles", sb.toString());
+                sb.append("\nComparison Points:\n");
+                for (ComparisonPoint point : comparison.comparisonPoints()) {
+                    sb.append(String.format("- %s: %s (Vehicle: %s)\n", 
+                        point.category(), point.value(), point.vehicleId()));
+                }
             }
+            state.addToolResult("compareVehicles", sb.toString());
             return comparison;
         }
         
@@ -224,13 +214,11 @@ public class TechnicalExpertAgent {
                 }
             }
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: gmVehicleId=").append(gmVehicleId)
-                  .append(", competitors=").append(competitorList).append("\n");
-                sb.append(result.toString());
-                state.addToolResult("compareToCompetitors", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: gmVehicleId=").append(gmVehicleId)
+              .append(", competitors=").append(competitorList).append("\n");
+            sb.append(result.toString());
+            state.addToolResult("compareToCompetitors", sb.toString());
             
             return result.toString();
         }
@@ -243,26 +231,24 @@ public class TechnicalExpertAgent {
             logToolCall("calculateTCO", "vehicleId", vehicleId, "annualMiles", annualMiles, "years", years);
             TotalCostOfOwnership tco = tools.calculateTotalCostOfOwnership(vehicleId, years);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId)
-                  .append(", annualMiles=").append(annualMiles)
-                  .append(", years=").append(years).append("\n");
-                
-                if (tco == null) {
-                    sb.append("Unable to calculate TCO - vehicle not found");
-                } else {
-                    sb.append(String.format("Total Cost of Ownership (%d years):\n", years));
-                    sb.append(String.format("Purchase Price: $%,.0f\n", tco.purchasePrice()));
-                    sb.append(String.format("Fuel Cost: $%,.0f\n", tco.totalFuelCost()));
-                    sb.append(String.format("Maintenance: $%,.0f\n", tco.totalMaintenanceCost()));
-                    sb.append(String.format("Insurance: $%,.0f\n", tco.totalInsuranceCost()));
-                    sb.append(String.format("Depreciation: $%,.0f\n", tco.depreciation()));
-                    sb.append(String.format("Total Cost: $%,.0f\n", tco.totalCost()));
-                    sb.append(String.format("Cost per Mile: $%.2f", tco.costPerMile()));
-                }
-                state.addToolResult("calculateTCO", sb.toString());
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId)
+              .append(", annualMiles=").append(annualMiles)
+              .append(", years=").append(years).append("\n");
+            
+            if (tco == null) {
+                sb.append("Unable to calculate TCO - vehicle not found");
+            } else {
+                sb.append(String.format("Total Cost of Ownership (%d years):\n", years));
+                sb.append(String.format("Purchase Price: $%,.0f\n", tco.purchasePrice()));
+                sb.append(String.format("Fuel Cost: $%,.0f\n", tco.totalFuelCost()));
+                sb.append(String.format("Maintenance: $%,.0f\n", tco.totalMaintenanceCost()));
+                sb.append(String.format("Insurance: $%,.0f\n", tco.totalInsuranceCost()));
+                sb.append(String.format("Depreciation: $%,.0f\n", tco.depreciation()));
+                sb.append(String.format("Total Cost: $%,.0f\n", tco.totalCost()));
+                sb.append(String.format("Cost per Mile: $%.2f", tco.costPerMile()));
             }
+            state.addToolResult("calculateTCO", sb.toString());
             
             return tco;
         }
@@ -281,17 +267,15 @@ public class TechnicalExpertAgent {
                 true // IIHS Top Safety Pick
             );
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: vehicleId=").append(vehicleId).append("\n");
-                sb.append("Safety Ratings:\n");
-                sb.append(String.format("NHTSA Overall: %d/5 stars\n", ratings.overallRating()));
-                sb.append(String.format("Frontal Crash: %d/5 | Side Crash: %d/5 | Rollover: %d/5\n",
-                    ratings.frontalCrashRating(), ratings.sideCrashRating(), ratings.rolloverRating()));
-                sb.append("Safety Features: ").append(String.join(", ", ratings.safetyFeatures())).append("\n");
-                sb.append("IIHS Top Safety Pick: ").append(ratings.topSafetyPick() ? "Yes" : "No");
-                state.addToolResult("checkSafety", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: vehicleId=").append(vehicleId).append("\n");
+            sb.append("Safety Ratings:\n");
+            sb.append(String.format("NHTSA Overall: %d/5 stars\n", ratings.overallRating()));
+            sb.append(String.format("Frontal Crash: %d/5 | Side Crash: %d/5 | Rollover: %d/5\n",
+                ratings.frontalCrashRating(), ratings.sideCrashRating(), ratings.rolloverRating()));
+            sb.append("Safety Features: ").append(String.join(", ", ratings.safetyFeatures())).append("\n");
+            sb.append("IIHS Top Safety Pick: ").append(ratings.topSafetyPick() ? "Yes" : "No");
+            state.addToolResult("checkSafety", sb.toString());
             
             return ratings;
         }

@@ -36,20 +36,18 @@ public class CustomerProfilerAgent {
             logToolCall("analyzeNeeds", "familySize", familySize, "primaryUsage", primaryUsage, "preferences", preferences);
             CustomerProfile profile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: familySize=").append(familySize)
-                  .append(", primaryUsage=").append(primaryUsage)
-                  .append(", preferences=").append(preferences).append("\n");
-                sb.append(String.format("Customer Profile Created:\n"));
-                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
-                sb.append(String.format("Preferred Categories: %s\n", 
-                    profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
-                sb.append(String.format("Fuel Preference: %s\n", profile.fuelPreference()));
-                sb.append(String.format("Needs Towing: %s | Needs Off-Road: %s", 
-                    profile.needsTowing() ? "Yes" : "No", profile.needsOffRoad() ? "Yes" : "No"));
-                state.addToolResult("analyzeNeeds", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: familySize=").append(familySize)
+              .append(", primaryUsage=").append(primaryUsage)
+              .append(", preferences=").append(preferences).append("\n");
+            sb.append(String.format("Customer Profile Created:\n"));
+            sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+            sb.append(String.format("Preferred Categories: %s\n", 
+                profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+            sb.append(String.format("Fuel Preference: %s\n", profile.fuelPreference()));
+            sb.append(String.format("Needs Towing: %s | Needs Off-Road: %s", 
+                profile.needsTowing() ? "Yes" : "No", profile.needsOffRoad() ? "Yes" : "No"));
+            state.addToolResult("analyzeNeeds", sb.toString());
             return profile;
         }
         
@@ -97,22 +95,20 @@ public class CustomerProfilerAgent {
                 baseProfile.fuelPreference()
             );
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: familySize=").append(familySize)
-                  .append(", dailyCommute=").append(dailyCommute)
-                  .append(", weekendUsage=").append(weekendUsage)
-                  .append(", budget=$").append(String.format("%.0f", budget))
-                  .append(", creditScore=").append(creditScore).append("\n");
-                sb.append("Complete Profile Built:\n");
-                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
-                sb.append(String.format("Primary Usage: %s\n", profile.primaryUsage()));
-                sb.append(String.format("Categories: %s\n", 
-                    profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
-                sb.append("Preferences: ").append(String.join(", ", profile.preferences())).append("\n");
-                sb.append("Must-Have Features: ").append(String.join(", ", mustHaveFeatures));
-                state.addToolResult("buildProfile", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: familySize=").append(familySize)
+              .append(", dailyCommute=").append(dailyCommute)
+              .append(", weekendUsage=").append(weekendUsage)
+              .append(", budget=$").append(String.format("%.0f", budget))
+              .append(", creditScore=").append(creditScore).append("\n");
+            sb.append("Complete Profile Built:\n");
+            sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+            sb.append(String.format("Primary Usage: %s\n", profile.primaryUsage()));
+            sb.append(String.format("Categories: %s\n", 
+                profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+            sb.append("Preferences: ").append(String.join(", ", profile.preferences())).append("\n");
+            sb.append("Must-Have Features: ").append(String.join(", ", mustHaveFeatures));
+            state.addToolResult("buildProfile", sb.toString());
             
             return profile;
         }
@@ -124,14 +120,12 @@ public class CustomerProfilerAgent {
                 .map(VehicleCategory::getDisplayName)
                 .collect(Collectors.toList());
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
-                  .append(", familySize=").append(profile.familySize())
-                  .append(", primaryUsage=").append(profile.primaryUsage()).append("\n");
-                sb.append("Suggested Vehicle Categories: ").append(String.join(", ", categories));
-                state.addToolResult("suggestCategories", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
+              .append(", familySize=").append(profile.familySize())
+              .append(", primaryUsage=").append(profile.primaryUsage()).append("\n");
+            sb.append("Suggested Vehicle Categories: ").append(String.join(", ", categories));
+            state.addToolResult("suggestCategories", sb.toString());
             
             return categories;
         }
@@ -152,24 +146,22 @@ public class CustomerProfilerAgent {
                 })
                 .collect(Collectors.toList());
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: filteringVehicleIds=").append(vehicleIds)
-                  .append(", budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
-                  .append(", categories=").append(profile.preferredCategories().stream()
-                      .map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))).append("\n");
-                
-                if (filtered.isEmpty()) {
-                    sb.append("No vehicles match the profile criteria");
-                } else {
-                    sb.append("Filtered to ").append(filtered.size()).append(" matching vehicles:\n");
-                    for (VehicleInfo v : filtered) {
-                        sb.append(String.format("- %s %s %s - $%,.0f\n",
-                            v.make().getDisplayName(), v.model(), v.trim(), v.price()));
-                    }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: filteringVehicleIds=").append(vehicleIds)
+              .append(", budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
+              .append(", categories=").append(profile.preferredCategories().stream()
+                  .map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))).append("\n");
+            
+            if (filtered.isEmpty()) {
+                sb.append("No vehicles match the profile criteria");
+            } else {
+                sb.append("Filtered to ").append(filtered.size()).append(" matching vehicles:\n");
+                for (VehicleInfo v : filtered) {
+                    sb.append(String.format("- %s %s %s - $%,.0f\n",
+                        v.make().getDisplayName(), v.model(), v.trim(), v.price()));
                 }
-                state.addToolResult("filterVehicles", sb.toString());
             }
+            state.addToolResult("filterVehicles", sb.toString());
             
             return filtered;
         }
@@ -200,17 +192,15 @@ public class CustomerProfilerAgent {
                 "gasoline"
             );
             
-            if (state != null) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Parameters: budget=$").append(String.format("%.0f", budget))
-                  .append(", vehicleType=").append(vehicleType).append("\n");
-                sb.append("Quick Profile Created:\n");
-                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
-                sb.append(String.format("Vehicle Categories: %s\n", 
-                    categories.stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
-                sb.append(String.format("Assumed Family Size: %d", familySize));
-                state.addToolResult("createQuickProfile", sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Parameters: budget=$").append(String.format("%.0f", budget))
+              .append(", vehicleType=").append(vehicleType).append("\n");
+            sb.append("Quick Profile Created:\n");
+            sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+            sb.append(String.format("Vehicle Categories: %s\n", 
+                categories.stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+            sb.append(String.format("Assumed Family Size: %d", familySize));
+            state.addToolResult("createQuickProfile", sb.toString());
             
             return profile;
         }
