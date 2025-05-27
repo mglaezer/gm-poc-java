@@ -43,7 +43,7 @@ public class ContextAwareTest {
             false, // needsOffRoad
             "gasoline" // fuelPreference
         );
-        state.setCustomerProfile(profile);
+        // Profile is no longer used - agents extract context from conversation history
         System.out.println("Profile set: Family of 4, needs towing, budget $40-55k\n");
         
         // Test 3: Same technical question with profile

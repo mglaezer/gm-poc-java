@@ -1,142 +1,107 @@
 package com.example.agents.langgraph;
 
-import com.example.agents.CommonRequirements.*;
 import java.util.*;
 
 /**
- * Shared state for the multi-agent graph system.
- * This state is passed between different agent nodes.
+ * Simplified CustomerState that uses conversation history as the single source of truth.
+ * All agent interactions, tool results, and user responses are stored in the conversation.
  */
 public class CustomerState {
-    private final Map<String, Object> data;
+    private final List<String> conversationHistory;
+    private String currentQuery;
+    private String nextAgent;
+    private String routingReason;
     
     public CustomerState() {
-        this.data = new HashMap<>();
+        this.conversationHistory = new ArrayList<>();
     }
     
-    public CustomerState(Map<String, Object> initialData) {
-        this.data = new HashMap<>(initialData);
-    }
-    
-    // Customer profile and requirements
-    public CustomerProfile getCustomerProfile() {
-        return (CustomerProfile) data.get("customerProfile");
-    }
-    
-    public void setCustomerProfile(CustomerProfile profile) {
-        data.put("customerProfile", profile);
-    }
-    
-    public CustomerRequirements getCustomerRequirements() {
-        return (CustomerRequirements) data.get("customerRequirements");
-    }
-    
-    public void setCustomerRequirements(CustomerRequirements requirements) {
-        data.put("customerRequirements", requirements);
-    }
-    
-    // Vehicle recommendations
-    @SuppressWarnings("unchecked")
-    public List<VehicleInfo> getRecommendedVehicles() {
-        return (List<VehicleInfo>) data.getOrDefault("recommendedVehicles", new ArrayList<>());
-    }
-    
-    public void setRecommendedVehicles(List<VehicleInfo> vehicles) {
-        data.put("recommendedVehicles", vehicles);
-    }
-    
-    // Selected vehicle
-    public VehicleInfo getSelectedVehicle() {
-        return (VehicleInfo) data.get("selectedVehicle");
-    }
-    
-    public void setSelectedVehicle(VehicleInfo vehicle) {
-        data.put("selectedVehicle", vehicle);
-    }
-    
-    // Financial information
-    public FinancingOption getSelectedFinancing() {
-        return (FinancingOption) data.get("selectedFinancing");
-    }
-    
-    public void setSelectedFinancing(FinancingOption financing) {
-        data.put("selectedFinancing", financing);
-    }
-    
-    @SuppressWarnings("unchecked")
-    public List<FinancingOption> getFinancingOptions() {
-        return (List<FinancingOption>) data.getOrDefault("financingOptions", new ArrayList<>());
-    }
-    
-    public void setFinancingOptions(List<FinancingOption> options) {
-        data.put("financingOptions", options);
-    }
-    
-    // Conversation history
-    @SuppressWarnings("unchecked")
+    // Conversation history management
     public List<String> getConversationHistory() {
-        return (List<String>) data.getOrDefault("conversationHistory", new ArrayList<>());
+        return new ArrayList<>(conversationHistory);
     }
     
-    public void addToConversationHistory(String message) {
-        List<String> history = getConversationHistory();
-        history.add(message);
-        data.put("conversationHistory", history);
+    public void addToConversationHistory(String entry) {
+        conversationHistory.add(entry);
+        // Keep only last 30 entries to prevent overflow
+        if (conversationHistory.size() > 30) {
+            conversationHistory.remove(0);
+        }
     }
     
-    // Current query/intent
+    // Log agent actions with structured format
+    public void logAgentAction(String agentName, String action, String details) {
+        String entry = String.format("[%s] %s: %s", agentName, action, details);
+        addToConversationHistory(entry);
+    }
+    
+    // Log tool calls and results
+    public void logToolCall(String agentName, String toolName, String parameters, String result) {
+        String entry = String.format("[%s] Tool %s(%s) -> %s", agentName, toolName, parameters, result);
+        addToConversationHistory(entry);
+    }
+    
+    // Current query being processed
     public String getCurrentQuery() {
-        return (String) data.get("currentQuery");
+        return currentQuery;
     }
     
     public void setCurrentQuery(String query) {
-        data.put("currentQuery", query);
+        this.currentQuery = query;
     }
     
-    // Next agent to route to
+    // Routing information
     public String getNextAgent() {
-        return (String) data.get("nextAgent");
+        return nextAgent;
     }
     
-    public void setNextAgent(String agent) {
-        data.put("nextAgent", agent);
+    public void setNextAgent(String nextAgent) {
+        this.nextAgent = nextAgent;
     }
     
-    // Routing reason
     public String getRoutingReason() {
-        return (String) data.get("routingReason");
+        return routingReason;
     }
     
     public void setRoutingReason(String reason) {
-        data.put("routingReason", reason);
+        this.routingReason = reason;
     }
     
-    // Generic getter/setter
-    public Object get(String key) {
-        return data.get(key);
-    }
-    
-    public void set(String key, Object value) {
-        data.put(key, value);
-    }
-    
-    // Add vehicle to selected list (for comparisons)
-    @SuppressWarnings("unchecked")
-    public void addSelectedVehicleForComparison(VehicleInfo vehicle) {
-        List<VehicleInfo> selectedVehicles = (List<VehicleInfo>) data.getOrDefault("selectedVehiclesForComparison", new ArrayList<>());
-        if (!selectedVehicles.contains(vehicle)) {
-            selectedVehicles.add(vehicle);
+    // Extract information from conversation history
+    public List<String> getRecentVehiclesMentioned() {
+        List<String> vehicles = new ArrayList<>();
+        for (String entry : conversationHistory) {
+            // Look for vehicle search tool calls
+            if (entry.contains("Tool searchVehicles") || entry.contains("Tool searchVehiclesByMake")) {
+                vehicles.add(entry);
+            }
         }
-        data.put("selectedVehiclesForComparison", selectedVehicles);
+        return vehicles;
     }
     
-    @SuppressWarnings("unchecked")
-    public List<VehicleInfo> getSelectedVehiclesForComparison() {
-        return (List<VehicleInfo>) data.getOrDefault("selectedVehiclesForComparison", new ArrayList<>());
+    public String getLastAgentResponse() {
+        for (int i = conversationHistory.size() - 1; i >= 0; i--) {
+            String entry = conversationHistory.get(i);
+            // Look for agent responses (not tool calls or routing)
+            if ((entry.contains("Expert:") || entry.contains("Advisor:") || 
+                 entry.contains("Coordinator:") || entry.contains("Coach:") || 
+                 entry.contains("Profiler:") || entry.contains("Specialist:")) 
+                && !entry.startsWith("[")) {
+                return entry;
+            }
+        }
+        return null;
     }
     
-    // Copy state
-    public CustomerState copy() {
-        return new CustomerState(new HashMap<>(data));
+    public boolean hasRecentFinancingDiscussion() {
+        // Check last 5 entries for financing-related content
+        int start = Math.max(0, conversationHistory.size() - 5);
+        for (int i = start; i < conversationHistory.size(); i++) {
+            String entry = conversationHistory.get(i).toLowerCase();
+            if (entry.contains("lease") || entry.contains("finance") || entry.contains("loan") || entry.contains("payment")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

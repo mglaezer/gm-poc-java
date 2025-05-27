@@ -2,6 +2,7 @@ package com.example.agents.langgraph;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.util.List;
 
 /**
  * Demo showing how agents pass context between nodes
@@ -62,34 +63,27 @@ public class ContextAwareDemo {
         
         System.out.println("\n" + "=".repeat(50) + "\n");
         
-        // Show the state that's been built up
-        System.out.println("📊 Context accumulated in CustomerState:");
-        if (state.getCustomerProfile() != null) {
-            var profile = state.getCustomerProfile();
-            System.out.println("   ✓ Customer Profile:");
-            System.out.println("     - Family size: " + profile.familySize());
-            System.out.println("     - Budget: $" + profile.budgetMin() + "-$" + profile.budgetMax());
-            System.out.println("     - Preferred categories: " + profile.preferredCategories());
+        // Show the conversation history
+        System.out.println("📊 Context accumulated in Conversation History:");
+        List<String> history = state.getConversationHistory();
+        System.out.println("   Total entries: " + history.size());
+        System.out.println("\n   Recent activity:");
+        
+        // Show last 10 entries
+        int start = Math.max(0, history.size() - 10);
+        for (int i = start; i < history.size(); i++) {
+            System.out.println("   " + history.get(i));
         }
         
-        if (state.getCustomerRequirements() != null) {
-            var req = state.getCustomerRequirements();
-            System.out.println("   ✓ Customer Requirements:");
-            System.out.println("     - Credit score: " + req.creditScore());
-            System.out.println("     - Daily commute: " + req.dailyCommute());
+        // Extract some insights from the conversation
+        System.out.println("\n   Key information extracted:");
+        List<String> vehicleMentions = state.getRecentVehiclesMentioned();
+        if (!vehicleMentions.isEmpty()) {
+            System.out.println("   ✓ Vehicle searches performed: " + vehicleMentions.size());
         }
         
-        if (!state.getRecommendedVehicles().isEmpty()) {
-            System.out.println("   ✓ Recommended Vehicles: " + state.getRecommendedVehicles().size() + " vehicles");
-        }
-        
-        if (state.getSelectedVehicle() != null) {
-            var vehicle = state.getSelectedVehicle();
-            System.out.println("   ✓ Selected Vehicle: " + vehicle.make().getDisplayName() + " " + vehicle.model());
-        }
-        
-        if (!state.getFinancingOptions().isEmpty()) {
-            System.out.println("   ✓ Financing Options: " + state.getFinancingOptions().size() + " options calculated");
+        if (state.hasRecentFinancingDiscussion()) {
+            System.out.println("   ✓ Financing has been discussed");
         }
         
         System.out.println("\n✅ Notice how each agent built upon the previous agent's work!");

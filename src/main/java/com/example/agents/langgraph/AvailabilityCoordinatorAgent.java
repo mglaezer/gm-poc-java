@@ -31,9 +31,10 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
                 @P("Vehicle ID") String vehicleId,
                 @P("ZIP code") String zipCode) {
             List<VehicleAvailability> availability = tools.checkAvailability(vehicleId, zipCode);
-            if (state != null) {
-                state.set("lastAvailabilityCheck", availability);
-                state.set("lastCheckedZipCode", zipCode);
+            if (state != null && !availability.isEmpty()) {
+                state.logToolCall("AVAILABILITY_COORDINATOR", "checkAvailability", 
+                    String.format("vehicleId=%s, zipCode=%s", vehicleId, zipCode),
+                    "Found " + availability.size() + " dealers with " + vehicleId + " near " + zipCode);
             }
             return availability;
         }
@@ -48,8 +49,10 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
             LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr, 
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
             TestDriveAppointment appointment = tools.scheduleTestDrive(vehicleId, dealerId, dateTime, customerName, customerPhone);
-            if (state != null) {
-                state.set("testDriveAppointment", appointment);
+            if (state != null && appointment != null) {
+                state.logToolCall("AVAILABILITY_COORDINATOR", "scheduleTestDrive", 
+                    String.format("vehicleId=%s, dealerId=%s, dateTime=%s", vehicleId, dealerId, dateTimeStr),
+                    "Scheduled test drive for " + vehicleId + " at " + dealerId + " on " + dateTimeStr);
             }
             return appointment;
         }
@@ -60,8 +63,12 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
             You are an availability coordinator for GM dealerships.
             You help customers find vehicles in stock and schedule test drives.
             
-            IMPORTANT: Use the customer's selected vehicle or recommended vehicles from previous interactions.
-            Don't ask which vehicle they're interested in if it's already been discussed.
+            IMPORTANT: Extract vehicle preferences and location from conversation history.
+            Look for mentions of:
+            - Specific vehicles discussed or recommended
+            - Location/ZIP code preferences
+            - Timing requirements
+            - Test drive preferences
             
             You can:
             - Check vehicle availability at nearby dealers
@@ -95,38 +102,6 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
         
         String query = state.getCurrentQuery();
         String conversation = String.join("\n", state.getConversationHistory());
-        
-        // Add selected vehicle context if available
-        VehicleInfo selectedVehicle = state.getSelectedVehicle();
-        if (selectedVehicle != null) {
-            conversation += "\n\nSelected Vehicle:";
-            conversation += "\n- ID: " + selectedVehicle.id();
-            conversation += "\n- " + selectedVehicle.make().getDisplayName() + " " + selectedVehicle.model();
-            conversation += "\n- Price: $" + String.format("%,.0f", selectedVehicle.price());
-        } else {
-            // If no selected vehicle, show recommended vehicles
-            List<VehicleInfo> recommendedVehicles = state.getRecommendedVehicles();
-            if (recommendedVehicles != null && !recommendedVehicles.isEmpty()) {
-                conversation += "\n\nRecommended Vehicles:";
-                for (VehicleInfo vehicle : recommendedVehicles) {
-                    conversation += "\n- " + vehicle.id() + ": " + 
-                                  vehicle.make().getDisplayName() + " " + vehicle.model() + 
-                                  " ($" + String.format("%,.0f", vehicle.price()) + ")";
-                }
-            }
-        }
-        
-        // Add any previous availability checks
-        Object lastCheck = state.get("lastAvailabilityCheck");
-        if (lastCheck != null) {
-            conversation += "\n\nPrevious availability check performed for ZIP: " + state.get("lastCheckedZipCode");
-        }
-        
-        // Add test drive appointment if scheduled
-        Object appointment = state.get("testDriveAppointment");
-        if (appointment != null) {
-            conversation += "\n\nTest drive already scheduled.";
-        }
         
         conversation += "\nUser: " + query;
         

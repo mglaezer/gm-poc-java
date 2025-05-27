@@ -1,6 +1,7 @@
 package com.example.agents.langgraph;
 
 import com.example.agents.CommonRequirements.*;
+import com.example.agents.MockVehicleData;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -9,7 +10,9 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Technical Expert Agent - Provides detailed vehicle information and comparisons
@@ -23,20 +26,64 @@ public class TechnicalExpertAgent implements AgentNode {
         public void setState(CustomerState state) {
             this.state = state;
         }
-        
+
         @Tool("Search vehicles by criteria")
         public List<VehicleInfo> searchVehicles(
-                @P("Category like Truck, SUV, Sedan") String category,
+                @P("Category like Truck, SUV, Sedan or null for all") String category,
                 @P("Min price") Double minPrice,
                 @P("Max price") Double maxPrice,
                 @P("Min MPG") Integer minMpg,
                 @P("Fuel type") String fuelType) {
-            logToolCall("searchVehicles", "category", category, "priceRange", "$" + minPrice + "-$" + maxPrice);
-            VehicleCategory cat = category != null ? VehicleCategory.fromString(category) : null;
+            String priceRange = (minPrice != null ? "$" + minPrice : "$0") + "-" + (maxPrice != null ? "$" + maxPrice : "unlimited");
+            logToolCall("searchVehicles", "category", category, "priceRange", priceRange);
+            VehicleCategory cat = null;
+            if (category != null && !category.equalsIgnoreCase("All") && !category.equalsIgnoreCase("Any")) {
+                cat = VehicleCategory.fromString(category);
+            }
             SearchCriteria criteria = new SearchCriteria(cat, minPrice, maxPrice, minMpg, fuelType, null);
             List<VehicleInfo> results = tools.searchVehicleInventory(criteria);
-            if (state != null && !results.isEmpty()) {
-                state.setRecommendedVehicles(results);
+            
+            // Log results to conversation history
+            if (state != null) {
+                String params = String.format("category=%s, priceRange=%s", category, priceRange);
+                String result = results.isEmpty() ? "No vehicles found" : 
+                    String.format("Found %d vehicles: %s", results.size(), 
+                        results.stream().limit(3)
+                            .map(v -> v.make().getDisplayName() + " " + v.model())
+                            .collect(Collectors.joining(", ")) + (results.size() > 3 ? "..." : ""));
+                state.logToolCall("TECHNICAL_EXPERT", "searchVehicles", params, result);
+            }
+            return results;
+        }
+        
+        @Tool("Search vehicles by make/brand")
+        public List<VehicleInfo> searchVehiclesByMake(
+                @P("Make like Chevrolet, GMC, Cadillac") String make,
+                @P("Exclude EVs") boolean excludeEVs) {
+            logToolCall("searchVehiclesByMake", "make", make != null ? make : "null", "excludeEVs", excludeEVs);
+            if (make == null) {
+                return new ArrayList<>();
+            }
+            VehicleMake vehicleMake = VehicleMake.fromString(make);
+            if (vehicleMake == null) {
+                return new ArrayList<>();
+            }
+            
+            List<VehicleInfo> results = MockVehicleData.VEHICLES.stream()
+                .filter(v -> v.make() == vehicleMake)
+                .filter(v -> !excludeEVs || !v.fuelType().equalsIgnoreCase("Electric"))
+                .collect(Collectors.toList());
+                
+            // Log results to conversation history
+            if (state != null) {
+                String params = String.format("make=%s, excludeEVs=%s", make, excludeEVs);
+                String result = results.isEmpty() ? "No vehicles found" : 
+                    String.format("Found %d %s vehicles%s: %s", results.size(), make, 
+                        excludeEVs ? " (non-EV)" : "",
+                        results.stream().limit(3)
+                            .map(v -> v.model())
+                            .collect(Collectors.joining(", ")) + (results.size() > 3 ? "..." : ""));
+                state.logToolCall("TECHNICAL_EXPERT", "searchVehiclesByMake", params, result);
             }
             return results;
         }
@@ -58,8 +105,14 @@ public class TechnicalExpertAgent implements AgentNode {
         public VehicleComparison compareVehicles(@P("List of vehicle IDs") List<String> vehicleIds) {
             logToolCall("compareVehicles", "vehicleIds", vehicleIds);
             VehicleComparison comparison = tools.compareVehicles(vehicleIds);
-            if (state != null) {
-                state.set("lastComparison", comparison);
+            
+            // Log comparison to conversation history
+            if (state != null && comparison != null) {
+                String vehicleNames = comparison.vehicles().stream()
+                    .map(v -> v.make().getDisplayName() + " " + v.model())
+                    .collect(Collectors.joining(" vs "));
+                state.logToolCall("TECHNICAL_EXPERT", "compareVehicles", 
+                    vehicleIds.toString(), "Compared: " + vehicleNames);
             }
             return comparison;
         }
@@ -88,11 +141,21 @@ public class TechnicalExpertAgent implements AgentNode {
             You provide detailed information about vehicle specifications, performance, and features.
             
             IMPORTANT RULES:
-            1. If NO customer profile exists, show popular vehicles across different categories
-            2. NEVER ask profiling questions - that's not your job
-            3. Extract context clues from the user's question (e.g., "family car" = SUV/Minivan)
-            4. Always be ready to provide specific vehicle information immediately
-            5. For comparison requests, do ONE comparison only - don't repeat or try multiple combinations
+            1. Analyze the ENTIRE conversation history to understand user preferences and context
+            2. Extract preferences from previous messages (budget, size, features mentioned)
+            3. For requests like "show me cars/SUVs/trucks", use searchVehicles tool
+            4. For brand-specific requests (e.g., "Chevy", "GMC"), use searchVehiclesByMake tool
+            5. For "non-EV" requests, use searchVehiclesByMake with excludeEVs=true
+            6. NEVER ask profiling questions - extract needs from conversation
+            7. For comparison requests, do ONE comparison only
+            8. If showing 4+ vehicles, suggest they can ask for specific comparisons
+            9. When user says "show me [vehicle type]", immediately search and display matching vehicles
+            
+            CONTEXT EXTRACTION:
+            - Look for budget mentions: "under 50k", "around $40,000", "affordable"
+            - Look for size/type preferences: "family", "compact", "7-seater"
+            - Look for feature needs: "towing", "fuel efficient", "AWD"
+            - Use these to set appropriate search parameters
             
             You can:
             - Show popular GM vehicles if no specific request
@@ -128,46 +191,22 @@ public class TechnicalExpertAgent implements AgentNode {
         
         String query = state.getCurrentQuery();
         
-        // Only include recent conversation history to avoid confusion
+        // Include full conversation history (up to 30 messages maintained by CustomerState)
         var history = state.getConversationHistory();
         String conversation = "";
         if (!history.isEmpty()) {
-            // Include only the last few exchanges to avoid confusing the LLM with old recommendations
-            int start = Math.max(0, history.size() - 4); // Last 2 exchanges
-            conversation = String.join("\n", history.subList(start, history.size()));
+            conversation = String.join("\n", history);
         }
         
-        // Add customer profile context if available
-        CustomerProfile profile = state.getCustomerProfile();
-        if (profile != null) {
-            conversation += "\n\nCustomer Profile:";
-            conversation += "\n- Family size: " + profile.familySize();
-            conversation += "\n- Primary usage: " + profile.primaryUsage();
-            conversation += "\n- Budget: $" + profile.budgetMin() + "-$" + profile.budgetMax();
-            conversation += "\n- Preferred categories: " + profile.preferredCategories();
-            conversation += "\n- Fuel preference: " + profile.fuelPreference();
-            if (profile.needsTowing()) {
-                conversation += "\n- Needs towing capability";
-            }
-            if (profile.needsOffRoad()) {
-                conversation += "\n- Needs off-road capability";
-            }
-            conversation += "\n- Must-have features: " + profile.preferences();
-        }
-        
-        // Add any previously recommended vehicles
-        List<VehicleInfo> previousRecommendations = state.getRecommendedVehicles();
-        if (previousRecommendations != null && !previousRecommendations.isEmpty()) {
-            conversation += "\n\nPreviously discussed vehicles:";
-            for (VehicleInfo vehicle : previousRecommendations) {
-                conversation += "\n- " + vehicle.make().getDisplayName() + " " + vehicle.model() + 
-                              " ($" + String.format("%,.0f", vehicle.price()) + ")";
-            }
-        }
-        
+        // The conversation history contains all context needed
         conversation += "\nUser: " + query;
         
+        // Let the LLM process the request with tools
         String response = assistant.provideTechnicalInfo(conversation);
+        
+        // Log the agent's response
+        state.logAgentAction("TECHNICAL_EXPERT", "Response", response);
+        state.addToConversationHistory("User: " + query);
         state.addToConversationHistory("Technical Expert: " + response);
         
         return state;

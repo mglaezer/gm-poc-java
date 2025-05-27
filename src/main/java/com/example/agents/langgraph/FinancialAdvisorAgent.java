@@ -33,7 +33,9 @@ public class FinancialAdvisorAgent implements AgentNode {
             logToolCall("calculateFinancing", "vehicleId", vehicleId, "downPayment", "$" + downPayment, "termMonths", termMonths);
             FinancingOption option = tools.calculateFinancing(vehicleId, downPayment, termMonths, creditScore);
             if (state != null && option != null) {
-                state.setSelectedFinancing(option);
+                state.logToolCall("FINANCIAL_ADVISOR", "calculateFinancing", 
+                    String.format("vehicleId=%s, downPayment=%.2f, termMonths=%d, creditScore=%s", vehicleId, downPayment, termMonths, creditScore),
+                    "Calculated financing for " + vehicleId + ": $" + option.monthlyPayment() + "/month");
             }
             return option;
         }
@@ -44,7 +46,9 @@ public class FinancialAdvisorAgent implements AgentNode {
                 @P("Credit score") String creditScore) {
             List<FinancingOption> options = tools.compareFinancingOptions(vehicleId, creditScore);
             if (state != null && !options.isEmpty()) {
-                state.setFinancingOptions(options);
+                state.logToolCall("FINANCIAL_ADVISOR", "compareFinancing", 
+                    String.format("vehicleId=%s, creditScore=%s", vehicleId, creditScore),
+                    "Compared " + options.size() + " financing options for " + vehicleId);
             }
             return options;
         }
@@ -58,14 +62,26 @@ public class FinancialAdvisorAgent implements AgentNode {
                 @P("Accidents in last 5 years") int accidents,
                 @P("Credit score") String creditScore) {
             DriverProfile driver = new DriverProfile(age, "unknown", yearsLicensed, accidents, 0, creditScore);
-            return tools.calculateInsuranceCosts(vehicleId, zipCode, driver);
+            InsuranceCost cost = tools.calculateInsuranceCosts(vehicleId, zipCode, driver);
+            if (state != null && cost != null) {
+                state.logToolCall("FINANCIAL_ADVISOR", "calculateInsurance", 
+                    String.format("vehicleId=%s, zipCode=%s, age=%d, yearsLicensed=%d", vehicleId, zipCode, age, yearsLicensed),
+                    "Calculated insurance for " + vehicleId + ": $" + cost.monthlyPremium() + "/month");
+            }
+            return cost;
         }
         
         @Tool("Suggest budget allocation")
         public BudgetRecommendation suggestBudget(
                 @P("Monthly income") double monthlyIncome,
                 @P("Monthly expenses") double monthlyExpenses) {
-            return tools.suggestBudgetAllocation(monthlyIncome, monthlyExpenses);
+            BudgetRecommendation budget = tools.suggestBudgetAllocation(monthlyIncome, monthlyExpenses);
+            if (state != null && budget != null) {
+                state.logToolCall("FINANCIAL_ADVISOR", "suggestBudget", 
+                    String.format("monthlyIncome=%.2f, monthlyExpenses=%.2f", monthlyIncome, monthlyExpenses),
+                    "Suggested max car payment: $" + budget.maxMonthlyPayment() + "/month");
+            }
+            return budget;
         }
     }
     
@@ -74,8 +90,12 @@ public class FinancialAdvisorAgent implements AgentNode {
             You are a financial advisor specializing in vehicle financing.
             You help customers understand financing options and make informed decisions.
             
-            IMPORTANT: Use the customer's budget and credit score from their profile.
-            Don't ask for information that was already collected by the Customer Profiler.
+            IMPORTANT: Extract budget and credit score information from the conversation history.
+            Look for mentions of:
+            - Budget ranges or monthly payment preferences
+            - Credit score or credit history
+            - Down payment capabilities
+            - Current monthly expenses
             
             You can:
             - Calculate monthly payments based on the customer's budget
@@ -110,44 +130,6 @@ public class FinancialAdvisorAgent implements AgentNode {
         
         String query = state.getCurrentQuery();
         String conversation = String.join("\n", state.getConversationHistory());
-        
-        // Add customer profile for financial context
-        CustomerProfile profile = state.getCustomerProfile();
-        if (profile != null) {
-            conversation += "\n\nCustomer Financial Profile:";
-            conversation += "\n- Budget: $" + profile.budgetMin() + "-$" + profile.budgetMax();
-        }
-        
-        CustomerRequirements requirements = state.getCustomerRequirements();
-        if (requirements != null) {
-            conversation += "\n- Credit score: " + requirements.creditScore();
-            conversation += "\n- Monthly budget estimate: $" + (requirements.budget() / 60); // Assuming 60-month loan
-        }
-        
-        // Add selected vehicle context if available
-        VehicleInfo selectedVehicle = state.getSelectedVehicle();
-        if (selectedVehicle != null) {
-            conversation += "\n\nSelected Vehicle: " + selectedVehicle.make().getDisplayName() + 
-                          " " + selectedVehicle.model() + " - Price: $" + String.format("%,.0f", selectedVehicle.price());
-        }
-        
-        // Add recommended vehicles if no vehicle selected yet
-        if (selectedVehicle == null) {
-            List<VehicleInfo> recommendedVehicles = state.getRecommendedVehicles();
-            if (recommendedVehicles != null && !recommendedVehicles.isEmpty()) {
-                conversation += "\n\nRecommended Vehicles:";
-                for (VehicleInfo vehicle : recommendedVehicles) {
-                    conversation += "\n- " + vehicle.make().getDisplayName() + " " + vehicle.model() + 
-                                  " ($" + String.format("%,.0f", vehicle.price()) + ")";
-                }
-            }
-        }
-        
-        // Add any existing financing options
-        List<FinancingOption> existingOptions = state.getFinancingOptions();
-        if (existingOptions != null && !existingOptions.isEmpty()) {
-            conversation += "\n\nPreviously calculated financing options available.";
-        }
         
         conversation += "\nUser: " + query;
         

@@ -12,6 +12,8 @@ import dev.langchain4j.service.UserMessage;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import com.example.agents.MockVehicleData;
 
 /**
  * Customer Profiler Agent - Understands customer needs and builds profiles
@@ -34,7 +36,10 @@ public class CustomerProfilerAgent implements AgentNode {
             logToolCall("analyzeNeeds", "familySize", familySize, "primaryUsage", primaryUsage, "preferences", preferences);
             CustomerProfile profile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
             if (state != null) {
-                state.setCustomerProfile(profile);
+                state.logToolCall("CUSTOMER_PROFILER", "analyzeCustomerNeeds",
+                    String.format("familySize=%d, usage=%s", familySize, primaryUsage),
+                    String.format("Profile created: budget=$%.0f-%.0f, categories=%s", 
+                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories()));
             }
             return profile;
         }
@@ -53,8 +58,10 @@ public class CustomerProfilerAgent implements AgentNode {
             );
             CustomerProfile profile = tools.buildCustomerProfile(req);
             if (state != null) {
-                state.setCustomerProfile(profile);
-                state.setCustomerRequirements(req);
+                state.logToolCall("CUSTOMER_PROFILER", "buildProfile",
+                    String.format("budget=%.0f, familySize=%d", budget, familySize),
+                    String.format("Complete profile: budget=$%.0f-%.0f, categories=%s, creditScore=%s", 
+                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories(), creditScore));
             }
             return profile;
         }
@@ -65,9 +72,60 @@ public class CustomerProfilerAgent implements AgentNode {
             logToolCall("suggestCategories", "profile", profile.familySize() + " family, $" + profile.budgetMin() + "-$" + profile.budgetMax());
             List<VehicleCategory> categories = tools.suggestVehicleCategories(profile);
             if (state != null) {
-                state.set("suggestedCategories", categories);
+                state.logToolCall("CUSTOMER_PROFILER", "suggestCategories",
+                    "profile", 
+                    "Suggested categories: " + categories);
             }
             return categories;
+        }
+        
+        @Tool("Filter existing vehicle recommendations based on user preferences")
+        public List<VehicleInfo> filterVehicles(
+                @P("Budget maximum or 0 for no limit") double maxBudget,
+                @P("Vehicle category preference or 'any'") String preferredCategory,
+                @P("Must-have feature or 'none'") String mustHaveFeature) {
+            logToolCall("filterVehicles", "maxBudget", maxBudget, "category", preferredCategory, "feature", mustHaveFeature);
+            
+            // Get vehicles from mock data for now - in a real system this would parse from conversation
+            List<VehicleInfo> currentVehicles = MockVehicleData.VEHICLES;
+            if (currentVehicles == null || currentVehicles.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            List<VehicleInfo> filtered = new ArrayList<>();
+            for (VehicleInfo vehicle : currentVehicles) {
+                boolean matches = true;
+                
+                // Filter by budget
+                if (maxBudget > 0 && vehicle.price() > maxBudget) {
+                    matches = false;
+                }
+                
+                // Filter by category (rough matching)
+                if (!preferredCategory.equalsIgnoreCase("any")) {
+                    String vehicleCategory = vehicle.category().toLowerCase();
+                    String preferred = preferredCategory.toLowerCase();
+                    if (!vehicleCategory.contains(preferred) && !preferred.contains(vehicleCategory)) {
+                        matches = false;
+                    }
+                }
+                
+                if (matches) {
+                    filtered.add(vehicle);
+                }
+            }
+            
+            // Log filtered results to conversation
+            if (state != null) {
+                String result = filtered.isEmpty() ? "No vehicles match the criteria" :
+                    String.format("Filtered to %d vehicles: %s", filtered.size(),
+                        filtered.stream().limit(3)
+                            .map(v -> v.make().getDisplayName() + " " + v.model())
+                            .collect(Collectors.joining(", ")) + (filtered.size() > 3 ? "..." : ""));
+                state.logToolCall("CUSTOMER_PROFILER", "filterVehicles", 
+                    String.format("budget=%.0f, category=%s", maxBudget, preferredCategory), result);
+            }
+            return filtered;
         }
         
         @Tool("Create a basic profile with minimal information")
@@ -111,7 +169,10 @@ public class CustomerProfilerAgent implements AgentNode {
             );
             
             if (state != null) {
-                state.setCustomerProfile(profile);
+                state.logToolCall("CUSTOMER_PROFILER", "createQuickProfile",
+                    String.format("budget=%.0f, size=%s", budget, vehicleSize),
+                    String.format("Quick profile: budget=$%.0f-%.0f, categories=%s", 
+                        budgetMin, budgetMax, categories));
             }
             return profile;
         }
@@ -123,14 +184,20 @@ public class CustomerProfilerAgent implements AgentNode {
             Your job is to understand customer needs with MINIMAL questions.
             
             IMPORTANT RULES:
-            1. If a customer profile already exists, DO NOT ask any questions - just confirm and move on
-            2. Ask MAXIMUM 2 questions at a time
-            3. Focus on the MOST essential information first:
-               - What's your budget range?
-               - What size vehicle do you need (compact, midsize, full-size)?
+            1. DETECT THE MODE:
+               - NARROWING MODE: If user just saw 4+ vehicle options and needs help choosing
+               - INITIAL MODE: If no profile exists and user needs basic profiling
+            2. For NARROWING MODE:
+               - Ask ONLY 1-2 key filtering questions to reduce options
+               - Focus on: budget range, vehicle size, or key must-have feature
+               - Say: "I can help narrow this down with 1-2 quick questions"
+            3. For INITIAL MODE:
+               - Ask MAXIMUM 2 questions at a time
+               - Focus on budget and size preference
             4. Always offer: "Or if you'd prefer, I can show you some popular options right away"
-            5. If the user seems reluctant or gives short answers, immediately offer to skip profiling
-            6. Extract information from context clues rather than asking directly when possible
+            5. If user seems reluctant, immediately offer to skip profiling
+            6. Extract information from context clues rather than asking directly
+            7. If user asks to \"show me\" or \"see\" vehicles, redirect to TechnicalExpert
             
             Essential information only:
             - Budget range (most important)
@@ -163,38 +230,47 @@ public class CustomerProfilerAgent implements AgentNode {
         String query = state.getCurrentQuery();
         String conversation = String.join("\n", state.getConversationHistory());
         
-        // Add existing profile information to conversation context
-        CustomerProfile existingProfile = state.getCustomerProfile();
-        if (existingProfile != null) {
-            conversation += "\n\nExisting Customer Profile:";
-            conversation += "\n- Family size: " + existingProfile.familySize();
-            conversation += "\n- Primary usage: " + existingProfile.primaryUsage();
-            conversation += "\n- Budget: $" + existingProfile.budgetMin() + "-$" + existingProfile.budgetMax();
-            conversation += "\n- Preferred categories: " + existingProfile.preferredCategories();
-            conversation += "\n- Fuel preference: " + existingProfile.fuelPreference();
-            if (existingProfile.needsTowing()) {
-                conversation += "\n- Needs towing capability";
+        // Check conversation history to determine context
+        List<String> recentVehicles = state.getRecentVehiclesMentioned();
+        boolean isNarrowingMode = false;
+        
+        // Look for recent searches that found many vehicles
+        for (String entry : recentVehicles) {
+            if (entry.contains("Found") && entry.contains("vehicles")) {
+                // Extract number if possible
+                String[] parts = entry.split(" ");
+                for (int i = 0; i < parts.length - 1; i++) {
+                    if (parts[i].equals("Found")) {
+                        try {
+                            int count = Integer.parseInt(parts[i + 1]);
+                            if (count >= 4) {
+                                isNarrowingMode = true;
+                                conversation += "\n\nNARROWING MODE: User saw " + count + " vehicles and needs help choosing.";
+                                conversation += "\n" + entry;
+                                break;
+                            }
+                        } catch (NumberFormatException e) {
+                            // Ignore
+                        }
+                    }
+                }
             }
         }
         
-        CustomerRequirements existingReq = state.getCustomerRequirements();
-        if (existingReq != null) {
-            conversation += "\n\nCustomer Requirements:";
-            conversation += "\n- Daily commute: " + existingReq.dailyCommute();
-            conversation += "\n- Weekend usage: " + existingReq.weekendUsage();
-            conversation += "\n- Credit score: " + existingReq.creditScore();
-        }
+        // The conversation history contains all user preferences and context
+        
+        // All context is in conversation history
         
         conversation += "\nUser: " + query;
         
         String response = assistant.profileCustomer(conversation);
+        
+        // Log the response
+        state.logAgentAction("CUSTOMER_PROFILER", "Response", response);
         state.addToConversationHistory("Customer Profiler: " + response);
         
-        // The assistant should have used tools to set the profile
-        // Check if we now have a profile
-        if (state.getCustomerProfile() != null) {
-            state.setNextAgent("TECHNICAL_EXPERT");
-        }
+        // Usually route to technical expert after profiling to show vehicles
+        state.setNextAgent("TECHNICAL_EXPERT");
         
         return state;
     }

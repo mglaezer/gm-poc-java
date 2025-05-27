@@ -21,10 +21,19 @@ public class ToolsImpl implements Tools {
         return MockVehicleData.VEHICLES.stream()
             .filter(vehicle -> {
                 if (criteria.category() != null) {
+                    // Check if vehicle category matches or contains the searched category
                     VehicleCategory vehicleCategory = VehicleCategory.fromString(vehicle.category());
-                    if (vehicleCategory != criteria.category()) {
-                        return false;
+                    if (vehicleCategory == criteria.category()) {
+                        return true; // Exact match
                     }
+                    
+                    // Check if the vehicle's category string contains the searched category
+                    String searchedCategory = criteria.category().getDisplayName();
+                    if (vehicle.category().toLowerCase().contains(searchedCategory.toLowerCase())) {
+                        return true; // Partial match (e.g., "Luxury SUV" contains "SUV")
+                    }
+                    
+                    return false;
                 }
                 if (criteria.minPrice() != null && vehicle.price() < criteria.minPrice()) {
                     return false;

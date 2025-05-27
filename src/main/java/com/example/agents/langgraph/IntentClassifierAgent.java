@@ -4,6 +4,8 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
+import com.example.agents.CommonRequirements.*;
+import java.util.List;
 
 /**
  * Intent Classifier Agent - Routes user queries to appropriate expert agents
@@ -13,32 +15,102 @@ public class IntentClassifierAgent implements AgentNode {
     interface IntentClassifier {
         @SystemMessage("""
             You are an intent classifier for a GM vehicle selection system.
-            Analyze the user's query and the current conversation state to determine which expert agent should handle it.
+            Analyze the user's query AND the entire conversation history to determine which expert agent should handle it.
+            The conversation history contains all context about the user's preferences, budget, and needs.
             
             CRITICAL ROUTING RULES:
-            1. AVOID CUSTOMER_PROFILER unless absolutely necessary:
-               - Only route there if user explicitly asks to set preferences/budget
-               - Or if they say something like "I need help choosing" with NO other context
-            2. Default to TECHNICAL_EXPERT for general vehicle questions
-            3. If user mentions any specific vehicle, feature, or comparison -> TECHNICAL_EXPERT
-            4. If profile exists, NEVER route to CUSTOMER_PROFILER unless user explicitly asks to change it
-            5. For vague requests like "help me find a car", prefer TECHNICAL_EXPERT to show options
             
-            Available agents:
-            - CUSTOMER_PROFILER: ONLY for explicit preference setting requests
-            - TECHNICAL_EXPERT: For ALL vehicle questions, specs, features, recommendations
-            - FINANCIAL_ADVISOR: For financing, payments, insurance, budgeting
-            - AVAILABILITY_COORDINATOR: For inventory, test drives, dealer locations
-            - NEGOTIATION_COACH: For pricing, deals, trade-ins, incentives
-            - EV_SPECIALIST: For electric vehicle specific questions
+            PRIORITY ORDER (check in this order):
+            1. Route to FINANCIAL_ADVISOR when:
+               - User mentions "lease", "finance", "buy", "purchase", "loan", "payment", "monthly"
+               - User asks about costs, budgeting, insurance, or affordability
+               - Even if they mention a specific vehicle, if the intent is financial, route here
+            
+            2. Route to NEGOTIATION_COACH when:
+               - User mentions "trade-in", "negotiate", "deal", "incentive", "rebate"
+               - User asks about best time to buy or pricing strategies
+            
+            3. Route to EV_SPECIALIST when:
+               - User specifically asks about electric vehicles, charging, or range
+               - User wants to compare EV vs gas vehicles
+            
+            4. Route to AVAILABILITY_COORDINATOR when:
+               - User wants to check inventory, availability, or dealer stock
+               - User wants to schedule a test drive
+            
+            5. Route to CUSTOMER_PROFILER ONLY when:
+               - User explicitly asks for help choosing: "help me decide", "I don't know what I want"
+               - User seems overwhelmed after seeing many options
+               - NEVER route here just to ask questions
+               - NEVER route to this agent if the user expressed what they want
+            
+            6. Route to TECHNICAL_EXPERT when:
+               - User asks to see/show/display vehicles
+               - User mentions specific vehicles
+               - User asks about specs, features, performance, safety ratings, prices
+               - User wants to compare vehicles
+            
+            Available agents and their capabilities:
+            
+            TECHNICAL_EXPERT - Vehicle Information & Recommendations
+            Tools: searchVehicles, searchVehiclesByMake, getVehicleDetails, searchByMakeModel, 
+                   compareVehicles, compareToCompetitors, calculateTCO, checkSafety
+            Route here for: showing vehicles, comparing models, vehicle specs, features, 
+                           performance data, safety ratings, total cost of ownership
+            
+            FINANCIAL_ADVISOR - Financing & Budget Management
+            Tools: calculateFinancing, compareFinancing, calculateInsurance, suggestBudget
+            Route here for: lease/buy/finance decisions, monthly payments, loan terms, 
+                           insurance costs, budget planning, affordability analysis
+            
+            CUSTOMER_PROFILER - Narrowing Down Options
+            Tools: analyzeNeeds, buildProfile, suggestCategories, filterVehicles, createQuickProfile
+            Route here ONLY for: when user is overwhelmed with choices, explicitly asks for help deciding,
+                                wants to narrow down from many shown vehicles
+            
+            AVAILABILITY_COORDINATOR - Inventory & Test Drives
+            Tools: checkAvailability, scheduleTestDrive
+            Route here for: checking dealer inventory, finding available vehicles,
+                           scheduling test drives, dealer locations
+            
+            NEGOTIATION_COACH - Pricing Strategy & Trade-ins
+            Tools: calculateTradeIn, suggestStrategy, findIncentives
+            Route here for: trade-in values, negotiation tips, best time to buy,
+                           available rebates, dealer incentives, pricing strategies
+            
+            EV_SPECIALIST - Electric Vehicle Expertise
+            Tools: calculateChargingCosts, findChargingStations, estimateRange
+            Route here for: EV-specific questions, charging costs, charging station locations,
+                           range anxiety, electric vs gas comparisons
             
             Return your response in this exact format:
             AGENT: [agent name]
             REASON: [brief explanation why this agent was chosen, max 15 words]
             
-            Example:
+            Examples:
+            Query: "Let's lease blazer ev"
+            AGENT: FINANCIAL_ADVISOR
+            REASON: User wants to lease a specific vehicle
+            
+            Query: "What's my trade-in worth?"
+            AGENT: NEGOTIATION_COACH
+            REASON: User asking about trade-in value
+            
+            Query: "How much does it cost to charge a bolt ev?"
+            AGENT: EV_SPECIALIST
+            REASON: User asking about EV charging costs
+            
+            Query: "Can I test drive a silverado this weekend?"
+            AGENT: AVAILABILITY_COORDINATOR
+            REASON: User wants to schedule a test drive
+            
+            Query: "Show me SUVs"
             AGENT: TECHNICAL_EXPERT
-            REASON: User asking about vehicles, showing popular options
+            REASON: User wants to see vehicle options
+            
+            Query: "too many options, help me choose"
+            AGENT: CUSTOMER_PROFILER
+            REASON: User overwhelmed with options, needs narrowing help
             """)
         String classifyIntent(@UserMessage String context);
     }
@@ -65,34 +137,30 @@ public class IntentClassifierAgent implements AgentNode {
         StringBuilder context = new StringBuilder();
         context.append("User Query: ").append(query);
         
-        // Add current state information
-        if (state.getCustomerProfile() != null) {
-            context.append("\nCustomer Profile: EXISTS (Family size: ")
-                   .append(state.getCustomerProfile().familySize())
-                   .append(", Budget: $")
-                   .append(state.getCustomerProfile().budgetMin())
-                   .append("-$")
-                   .append(state.getCustomerProfile().budgetMax())
-                   .append(")");
-        } else {
-            context.append("\nCustomer Profile: NOT YET CREATED");
+        // Add conversation history for context
+        List<String> conversationHistory = state.getConversationHistory();
+        if (!conversationHistory.isEmpty()) {
+            context.append("\n\nRecent Conversation (last 10 messages):\n");
+            int start = Math.max(0, conversationHistory.size() - 10);
+            for (int i = start; i < conversationHistory.size(); i++) {
+                context.append(conversationHistory.get(i)).append("\n");
+            }
         }
         
-        if (!state.getRecommendedVehicles().isEmpty()) {
-            context.append("\nRecommended Vehicles: ")
-                   .append(state.getRecommendedVehicles().size())
-                   .append(" vehicles already recommended");
+        // Extract context from conversation history
+        List<String> recentVehicles = state.getRecentVehiclesMentioned();
+        if (!recentVehicles.isEmpty()) {
+            context.append("\nRecent vehicle searches: ").append(recentVehicles.size());
+            // Check if many vehicles were found in recent searches
+            for (String vehicleEntry : recentVehicles) {
+                if (vehicleEntry.contains("Found") && vehicleEntry.contains("vehicles")) {
+                    context.append("\n").append(vehicleEntry);
+                }
+            }
         }
         
-        if (state.getSelectedVehicle() != null) {
-            context.append("\nSelected Vehicle: ")
-                   .append(state.getSelectedVehicle().make().getDisplayName())
-                   .append(" ")
-                   .append(state.getSelectedVehicle().model());
-        }
-        
-        if (state.getFinancingOptions() != null && !state.getFinancingOptions().isEmpty()) {
-            context.append("\nFinancing: Options already calculated");
+        if (state.hasRecentFinancingDiscussion()) {
+            context.append("\nFinancing: Recent financing discussion detected");
         }
         
         String response = classifier.classifyIntent(context.toString());
@@ -112,7 +180,8 @@ public class IntentClassifierAgent implements AgentNode {
         
         state.setNextAgent(agent);
         state.setRoutingReason(reason);
-        state.addToConversationHistory("Router: Directing to " + agent + " - " + reason);
+        state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
+            "Directing to " + agent + " - " + reason);
         
         return state;
     }
