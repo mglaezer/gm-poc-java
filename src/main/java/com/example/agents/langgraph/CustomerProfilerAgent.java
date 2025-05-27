@@ -35,11 +35,20 @@ public class CustomerProfilerAgent {
                 @P("List of preferences") List<String> preferences) {
             logToolCall("analyzeNeeds", "familySize", familySize, "primaryUsage", primaryUsage, "preferences", preferences);
             CustomerProfile profile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
+            
             if (state != null) {
-                state.logToolCall("CUSTOMER_PROFILER", "analyzeCustomerNeeds",
-                    String.format("familySize=%d, usage=%s", familySize, primaryUsage),
-                    String.format("Profile created: budget=$%.0f-%.0f, categories=%s", 
-                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories()));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: familySize=").append(familySize)
+                  .append(", primaryUsage=").append(primaryUsage)
+                  .append(", preferences=").append(preferences).append("\n");
+                sb.append(String.format("Customer Profile Created:\n"));
+                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+                sb.append(String.format("Preferred Categories: %s\n", 
+                    profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+                sb.append(String.format("Fuel Preference: %s\n", profile.fuelPreference()));
+                sb.append(String.format("Needs Towing: %s | Needs Off-Road: %s", 
+                    profile.needsTowing() ? "Yes" : "No", profile.needsOffRoad() ? "Yes" : "No"));
+                state.addToolResult("analyzeNeeds", sb.toString());
             }
             return profile;
         }
@@ -89,10 +98,20 @@ public class CustomerProfilerAgent {
             );
             
             if (state != null) {
-                state.logToolCall("CUSTOMER_PROFILER", "buildProfile",
-                    String.format("familySize=%d, budget=$%.0f, credit=%s", familySize, budget, creditScore),
-                    String.format("Profile: budget=$%.0f-%.0f, categories=%s, primaryUsage=%s", 
-                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories(), profile.primaryUsage()));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: familySize=").append(familySize)
+                  .append(", dailyCommute=").append(dailyCommute)
+                  .append(", weekendUsage=").append(weekendUsage)
+                  .append(", budget=$").append(String.format("%.0f", budget))
+                  .append(", creditScore=").append(creditScore).append("\n");
+                sb.append("Complete Profile Built:\n");
+                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+                sb.append(String.format("Primary Usage: %s\n", profile.primaryUsage()));
+                sb.append(String.format("Categories: %s\n", 
+                    profile.preferredCategories().stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+                sb.append("Preferences: ").append(String.join(", ", profile.preferences())).append("\n");
+                sb.append("Must-Have Features: ").append(String.join(", ", mustHaveFeatures));
+                state.addToolResult("buildProfile", sb.toString());
             }
             
             return profile;
@@ -106,9 +125,12 @@ public class CustomerProfilerAgent {
                 .collect(Collectors.toList());
             
             if (state != null) {
-                state.logToolCall("CUSTOMER_PROFILER", "suggestCategories",
-                    String.format("budget=$%.0f-%.0f", profile.budgetMin(), profile.budgetMax()),
-                    String.format("Suggested: %s", categories));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
+                  .append(", familySize=").append(profile.familySize())
+                  .append(", primaryUsage=").append(profile.primaryUsage()).append("\n");
+                sb.append("Suggested Vehicle Categories: ").append(String.join(", ", categories));
+                state.addToolResult("suggestCategories", sb.toString());
             }
             
             return categories;
@@ -120,12 +142,10 @@ public class CustomerProfilerAgent {
                 @P("Customer profile") CustomerProfile profile) {
             logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
             
-            // Note: In production, this would use ToolsImpl but for now we'll use MockVehicleData directly
             List<VehicleInfo> filtered = MockVehicleData.VEHICLES.stream()
                 .filter(v -> vehicleIds.contains(v.id()))
                 .filter(v -> v.price() >= profile.budgetMin() && v.price() <= profile.budgetMax())
                 .filter(v -> {
-                    // Check if vehicle category matches preferences
                     String vehicleCategory = v.category();
                     return profile.preferredCategories().stream()
                         .anyMatch(cat -> cat.getDisplayName().equalsIgnoreCase(vehicleCategory));
@@ -133,9 +153,22 @@ public class CustomerProfilerAgent {
                 .collect(Collectors.toList());
             
             if (state != null) {
-                state.logToolCall("CUSTOMER_PROFILER", "filterVehicles",
-                    String.format("filtering %d vehicles", vehicleIds.size()),
-                    String.format("Found %d matching vehicles", filtered.size()));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: filteringVehicleIds=").append(vehicleIds)
+                  .append(", budget=$").append(String.format("%.0f-%.0f", profile.budgetMin(), profile.budgetMax()))
+                  .append(", categories=").append(profile.preferredCategories().stream()
+                      .map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))).append("\n");
+                
+                if (filtered.isEmpty()) {
+                    sb.append("No vehicles match the profile criteria");
+                } else {
+                    sb.append("Filtered to ").append(filtered.size()).append(" matching vehicles:\n");
+                    for (VehicleInfo v : filtered) {
+                        sb.append(String.format("- %s %s %s - $%,.0f\n",
+                            v.make().getDisplayName(), v.model(), v.trim(), v.price()));
+                    }
+                }
+                state.addToolResult("filterVehicles", sb.toString());
             }
             
             return filtered;
@@ -147,7 +180,6 @@ public class CustomerProfilerAgent {
                 @P("Vehicle type preference (SUV, Truck, Sedan, etc)") String vehicleType) {
             logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
             
-            // Determine family size based on vehicle type
             int familySize = vehicleType.toLowerCase().contains("suv") || 
                            vehicleType.toLowerCase().contains("truck") ? 4 : 2;
             
@@ -169,9 +201,15 @@ public class CustomerProfilerAgent {
             );
             
             if (state != null) {
-                state.logToolCall("CUSTOMER_PROFILER", "createQuickProfile",
-                    String.format("budget=$%.0f, type=%s", budget, vehicleType),
-                    String.format("Quick profile: categories=%s", categories));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: budget=$").append(String.format("%.0f", budget))
+                  .append(", vehicleType=").append(vehicleType).append("\n");
+                sb.append("Quick Profile Created:\n");
+                sb.append(String.format("Budget Range: $%,.0f - $%,.0f\n", profile.budgetMin(), profile.budgetMax()));
+                sb.append(String.format("Vehicle Categories: %s\n", 
+                    categories.stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
+                sb.append(String.format("Assumed Family Size: %d", familySize));
+                state.addToolResult("createQuickProfile", sb.toString());
             }
             
             return profile;

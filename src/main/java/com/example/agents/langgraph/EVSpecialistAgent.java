@@ -34,10 +34,27 @@ public class EVSpecialistAgent {
                        "milesPerYear", milesPerYear, "homeCharging%", homeChargingPercentage);
             double dailyMiles = milesPerYear / 365.0;
             ChargingCost cost = tools.calculateChargingCosts(vehicleId, zipCode, dailyMiles);
-            if (state != null && cost != null) {
-                state.logToolCall("EV_SPECIALIST", "calculateChargingCosts",
-                    String.format("vehicleId=%s, zipCode=%s, miles=%d", vehicleId, zipCode, milesPerYear),
-                    String.format("Monthly cost: $%.2f", cost.monthlyCost()));
+            
+            if (state != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: vehicleId=").append(vehicleId)
+                  .append(", zipCode=").append(zipCode)
+                  .append(", milesPerYear=").append(milesPerYear)
+                  .append(", homeCharging=").append(homeChargingPercentage).append("%\n");
+                
+                if (cost == null) {
+                    sb.append("Unable to calculate charging costs - vehicle not found or not an EV");
+                } else {
+                    sb.append(String.format("EV Charging Cost Analysis:\n"));
+                    sb.append(String.format("Daily Miles: %.1f | Annual Miles: %,d\n", dailyMiles, milesPerYear));
+                    sb.append(String.format("Daily Cost: $%.2f\n", cost.dailyCost()));
+                    sb.append(String.format("Monthly Cost: $%.2f\n", cost.monthlyCost()));
+                    sb.append(String.format("Annual Cost: $%.2f\n", cost.monthlyCost() * 12));
+                    sb.append(String.format("Cost per Mile: $%.3f\n", cost.costPerMile()));
+                    sb.append(String.format("Home Charging: $%.2f/kWh | Public: $%.2f/kWh", 
+                        cost.homeChargingCost(), cost.publicChargingCost()));
+                }
+                state.addToolResult("calculateChargingCosts", sb.toString());
             }
             return cost;
         }
@@ -49,10 +66,26 @@ public class EVSpecialistAgent {
                 @P("Charging type (Level2, DC_Fast, All)") String chargingType) {
             logToolCall("findChargingStations", "location", location, "radius", radiusMiles, "type", chargingType);
             List<ChargingStation> stations = tools.findChargingStations(location, radiusMiles);
+            
             if (state != null) {
-                state.logToolCall("EV_SPECIALIST", "findChargingStations",
-                    String.format("location=%s, radius=%d miles", location, radiusMiles),
-                    String.format("Found %d charging stations", stations.size()));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: location=").append(location)
+                  .append(", radius=").append(radiusMiles).append(" miles")
+                  .append(", type=").append(chargingType).append("\n");
+                
+                if (stations.isEmpty()) {
+                    sb.append("No charging stations found in the specified area");
+                } else {
+                    sb.append("Found ").append(stations.size()).append(" charging stations:\n");
+                    for (ChargingStation station : stations) {
+                        sb.append(String.format("- %s (%s) - %.1f mi away\n", 
+                            station.name(), station.address(), station.distance()));
+                        sb.append(String.format("  Type: %s | Network: %s | Ports: %d | Cost: $%.2f/kWh\n",
+                            station.chargerType(), station.network(), 
+                            station.availablePorts(), station.costPerKwh()));
+                    }
+                }
+                state.addToolResult("findChargingStations", sb.toString());
             }
             return stations;
         }
@@ -65,14 +98,29 @@ public class EVSpecialistAgent {
                 @P("Use AC/Heat") boolean useClimate) {
             logToolCall("estimateRange", "vehicleId", vehicleId, "temp", temperature, 
                        "highway%", highwayPercentage, "climate", useClimate);
-            // Convert to weather condition string
             String weatherCondition = temperature < 32 ? "cold" : temperature > 90 ? "hot" : "moderate";
-            double tripDistance = 200; // Default trip distance for estimation
+            double tripDistance = 200;
             RangeEstimate range = tools.estimateRangeForTrip(vehicleId, tripDistance, weatherCondition);
-            if (state != null && range != null) {
-                state.logToolCall("EV_SPECIALIST", "estimateRange",
-                    String.format("vehicleId=%s, temp=%dF, highway=%d%%", vehicleId, temperature, highwayPercentage),
-                    String.format("Estimated range: %.0f miles", range.adjustedRange()));
+            
+            if (state != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: vehicleId=").append(vehicleId)
+                  .append(", temperature=").append(temperature).append("°F")
+                  .append(", highway=").append(highwayPercentage).append("%")
+                  .append(", climate=").append(useClimate ? "on" : "off").append("\n");
+                
+                if (range == null) {
+                    sb.append("Unable to estimate range - vehicle not found or not an EV");
+                } else {
+                    sb.append(String.format("Range Estimate:\n"));
+                    sb.append(String.format("EPA Rated Range: %.0f miles\n", range.baseRange()));
+                    sb.append(String.format("Adjusted Range: %.0f miles\n", range.adjustedRange()));
+                    sb.append(String.format("Range Reduction: %.0f%% (%.0f miles)\n", 
+                        (range.rangeReduction() * 100), range.baseRange() - range.adjustedRange()));
+                    sb.append("Affecting Factors: ").append(String.join(", ", range.affectingFactors())).append("\n");
+                    sb.append("Can Complete 200mi Trip: ").append(range.canCompleteTrip() ? "Yes" : "No");
+                }
+                state.addToolResult("estimateRange", sb.toString());
             }
             return range;
         }

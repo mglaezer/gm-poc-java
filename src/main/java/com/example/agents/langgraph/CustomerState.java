@@ -1,7 +1,9 @@
 package com.example.agents.langgraph;
 
 import dev.langchain4j.data.message.*;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * CustomerState that maintains conversation history as list of ChatMessage objects.
@@ -9,68 +11,43 @@ import java.util.*;
  */
 public class CustomerState {
     private final List<ChatMessage> messages;
-    
+
     public CustomerState() {
         this.messages = new ArrayList<>();
     }
-    
-    public List<ChatMessage> getMessages() {
-        return new ArrayList<>(messages);
-    }
-    
-    public void addMessage(ChatMessage message) {
-        messages.add(message);
-    }
-    
+
+
     public void addUserMessage(String content) {
         messages.add(UserMessage.from(content));
     }
-    
+
     public void addAiMessage(String content) {
         messages.add(AiMessage.from(content));
     }
-    
-    public void addSystemMessage(String content) {
-        messages.add(SystemMessage.from(content));
+
+    public void addToolExecutionResult(String toolName, String executionResult) {
+        messages.add(ToolExecutionResultMessage.from(null, toolName, executionResult));
     }
-    
-    public ChatMessage getLastMessage() {
-        return messages.isEmpty() ? null : messages.get(messages.size() - 1);
-    }
-    
-    public String getLastMessageText() {
-        ChatMessage lastMessage = getLastMessage();
-        if (lastMessage == null) {
-            return "";
-        }
-        
-        if (lastMessage instanceof UserMessage) {
-            return ((UserMessage) lastMessage).singleText();
-        } else if (lastMessage instanceof AiMessage) {
-            return ((AiMessage) lastMessage).text();
-        } else if (lastMessage instanceof SystemMessage) {
-            return ((SystemMessage) lastMessage).text();
-        } else if (lastMessage instanceof ToolExecutionResultMessage) {
-            return ((ToolExecutionResultMessage) lastMessage).text();
-        }
-        return "";
-    }
-    
+
     public void logAgentAction(String agentName, String action, String details) {
         String entry = String.format("[%s] %s: %s", agentName, action, details);
         addAiMessage(entry);
     }
-    
+
     public void logToolCall(String agentName, String toolName, String parameters, String result) {
         String entry = String.format("[%s] Tool %s(%s) -> %s", agentName, toolName, parameters, result);
         addAiMessage(entry);
     }
     
+    public void addToolResult(String toolName, String result) {
+        addToolExecutionResult(toolName, result);
+    }
+
     public String getConversationContext() {
         if (messages.isEmpty()) {
             return "";
         }
-        
+
         StringBuilder context = new StringBuilder();
         for (ChatMessage message : messages) {
             String prefix = "";
@@ -97,13 +74,8 @@ public class CustomerState {
         }
         return context.toString().trim();
     }
-    
-    public List<ChatMessage> getMessagesOfType(Class<? extends ChatMessage> messageType) {
-        return messages.stream()
-                .filter(messageType::isInstance)
-                .toList();
-    }
-    
+
+
     public List<UserMessage> getUserMessages() {
         return messages.stream()
                 .filter(UserMessage.class::isInstance)
@@ -112,7 +84,7 @@ public class CustomerState {
     }
 
     public UserMessage getLastUserMessage() {
-        return getUserMessages().isEmpty() ? null : getUserMessages().get(getUserMessages().size() - 1);
+        return getUserMessages().isEmpty() ? null : getUserMessages().getLast();
     }
 
 

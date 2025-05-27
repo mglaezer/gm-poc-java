@@ -33,10 +33,26 @@ public class AvailabilityCoordinatorAgent {
             logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
             List<VehicleAvailability> availabilities = tools.checkAvailability(vehicleId, zipCode);
             VehicleAvailability availability = availabilities.isEmpty() ? null : availabilities.get(0);
-            if (state != null && availability != null) {
-                state.logToolCall("AVAILABILITY_COORDINATOR", "checkAvailability",
-                    String.format("vehicleId=%s, zipCode=%s", vehicleId, zipCode),
-                    availability.inStock() ? "In stock" : "Not in stock - " + availability.estimatedDelivery());
+            
+            if (state != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: vehicleId=").append(vehicleId)
+                  .append(", zipCode=").append(zipCode)
+                  .append(", radius=").append(radiusMiles).append(" miles\n");
+                
+                if (availability == null) {
+                    sb.append("No availability information found for this vehicle");
+                } else {
+                    sb.append(String.format("Vehicle Availability:\n"));
+                    sb.append(String.format("Dealer ID: %s\n", availability.dealerId()));
+                    sb.append(String.format("In Stock: %s\n", availability.inStock() ? "Yes" : "No"));
+                    if (availability.inStock()) {
+                        sb.append(String.format("Quantity Available: %d\n", availability.quantity()));
+                    } else {
+                        sb.append(String.format("Estimated Delivery: %s\n", availability.estimatedDelivery()));
+                    }
+                }
+                state.addToolResult("checkAvailability", sb.toString());
             }
             return availability;
         }
@@ -55,10 +71,25 @@ public class AvailabilityCoordinatorAgent {
             TestDriveAppointment appointment = tools.scheduleTestDrive(
                 vehicleId, dealerId, dateTime, customerName, customerPhone);
             
-            if (state != null && appointment != null) {
-                state.logToolCall("AVAILABILITY_COORDINATOR", "scheduleTestDrive",
-                    String.format("vehicleId=%s, dealer=%s, time=%s", vehicleId, dealerId, dateTimeStr),
-                    "Confirmation: " + appointment.confirmationNumber());
+            if (state != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Parameters: vehicleId=").append(vehicleId)
+                  .append(", dealerId=").append(dealerId)
+                  .append(", dateTime=").append(dateTimeStr)
+                  .append(", customer=").append(customerName)
+                  .append(", phone=").append(customerPhone).append("\n");
+                
+                if (appointment == null) {
+                    sb.append("Unable to schedule test drive - please check availability");
+                } else {
+                    sb.append(String.format("Test Drive Scheduled:\n"));
+                    sb.append(String.format("Confirmation Number: %s\n", appointment.confirmationNumber()));
+                    sb.append(String.format("Vehicle: %s\n", appointment.vehicleId()));
+                    sb.append(String.format("Dealer: %s\n", appointment.dealerId()));
+                    sb.append(String.format("Date/Time: %s\n", appointment.appointmentTime()));
+                    sb.append(String.format("Customer: %s (%s)", appointment.customerName(), appointment.customerPhone()));
+                }
+                state.addToolResult("scheduleTestDrive", sb.toString());
             }
             
             return appointment;
