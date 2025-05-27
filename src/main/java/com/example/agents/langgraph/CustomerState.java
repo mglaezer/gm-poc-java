@@ -110,11 +110,10 @@ public class CustomerState {
                 .map(UserMessage.class::cast)
                 .toList();
     }
-    
-    public List<AiMessage> getAiMessages() {
-        return messages.stream()
-                .filter(AiMessage.class::isInstance)
-                .map(AiMessage.class::cast)
-                .toList();
+
+    public UserMessage getLastUserMessage() {
+        return getUserMessages().isEmpty() ? null : getUserMessages().get(getUserMessages().size() - 1);
     }
+
+
 }

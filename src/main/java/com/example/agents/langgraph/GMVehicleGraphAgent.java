@@ -47,37 +47,39 @@ public class GMVehicleGraphAgent {
         
         // Route through intent classifier
         System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
-        String nextAgentName = router.classifyIntent(state);
+        IntentClassifierAgent.IntentClassification classification = router.classifyIntentWithReason(state);
+        String nextAgentName = classification.agent();
+        String reason = classification.reason();
         
         // Execute the appropriate agent
         String response;
         switch (nextAgentName) {
             case "CUSTOMER_PROFILER":
-                System.out.println("➡️  Agent: Customer Profiler");
+                System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
                 response = customerProfiler.execute(state, userQuery);
                 break;
             case "TECHNICAL_EXPERT":
-                System.out.println("➡️  Agent: Technical Expert");
+                System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
                 response = technicalExpert.execute(state, userQuery);
                 break;
             case "FINANCIAL_ADVISOR":
-                System.out.println("➡️  Agent: Financial Advisor");
+                System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
                 response = financialAdvisor.execute(state, userQuery);
                 break;
             case "AVAILABILITY_COORDINATOR":
-                System.out.println("➡️  Agent: Availability Coordinator");
+                System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
                 response = availabilityCoordinator.execute(state, userQuery);
                 break;
             case "NEGOTIATION_COACH":
-                System.out.println("➡️  Agent: Negotiation Coach");
+                System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
                 response = negotiationCoach.execute(state, userQuery);
                 break;
             case "EV_SPECIALIST":
-                System.out.println("➡️  Agent: EV Specialist");
+                System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
                 response = evSpecialist.execute(state, userQuery);
                 break;
             default:
-                System.out.println("➡️  Agent: Technical Expert (default)");
+                System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
                 response = technicalExpert.execute(state, userQuery);
                 break;
         }

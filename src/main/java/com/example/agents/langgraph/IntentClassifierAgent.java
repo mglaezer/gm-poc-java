@@ -4,13 +4,18 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
-import com.example.agents.CommonRequirements.*;
-import java.util.List;
+import dev.langchain4j.service.V;
+import dev.langchain4j.service.Result;
 
 /**
  * Intent Classifier Agent - Routes user queries to appropriate expert agents
  */
 public class IntentClassifierAgent {
+    
+    public record IntentClassification(
+        String agent,
+        String reason
+    ) {}
     
     interface IntentClassifier {
         @SystemMessage("""
@@ -46,14 +51,14 @@ public class IntentClassifierAgent {
             Available agents and their capabilities:
             
             TECHNICAL_EXPERT - Vehicle Information & Recommendations
-            Tools: searchVehicles, searchVehiclesByMake, getVehicleDetails, searchByMakeModel, 
+            Tools: searchVehicles, searchVehiclesByMake, getVehicleDetails, searchByMakeModel,
                    compareVehicles, compareToCompetitors, calculateTCO, checkSafety
-            Route here for: showing vehicles, comparing models, vehicle specs, features, 
+            Route here for: showing vehicles, comparing models, vehicle specs, features,
                            performance data, safety ratings, total cost of ownership
             
             FINANCIAL_ADVISOR - Financing & Budget Management
             Tools: calculateFinancing, compareFinancing, calculateInsurance, suggestBudget
-            Route here for: lease/buy/finance decisions, monthly payments, loan terms, 
+            Route here for: lease/buy/finance decisions, monthly payments, loan terms,
                            insurance costs, budget planning, affordability analysis
             
             CUSTOMER_PROFILER - Narrowing Down Options
@@ -76,12 +81,20 @@ public class IntentClassifierAgent {
             Route here for: EV-specific questions, charging costs, charging station locations,
                            range anxiety, electric vs gas comparisons
             
-            Return your response in this exact format:
-            AGENT: [agent name]
-            REASON: [brief explanation why this agent was chosen, max 15 words]
+            Return your response as a JSON object with this exact format:
+            {
+                "agent": "AGENT_NAME",
+                "reason": "Brief explanation why this agent was chosen (max 15 words)"
+            }
+            
+            Example responses:
+            {"agent": "TECHNICAL_EXPERT", "reason": "User wants to see SUV options and compare features"}
+            {"agent": "FINANCIAL_ADVISOR", "reason": "User asking about monthly payments and financing options"}
+            {"agent": "EV_SPECIALIST", "reason": "User inquiring about electric vehicle charging infrastructure"}
             
             """)
-        String classifyIntent(@UserMessage String context);
+        @UserMessage("{{context}}")
+        IntentClassification classifyIntent(@V("context") String context);
     }
     
     private final IntentClassifier classifier;
@@ -93,12 +106,9 @@ public class IntentClassifierAgent {
     }
     
     public String classifyIntent(CustomerState state) {
-        // Get the last user message specifically
-        List<dev.langchain4j.data.message.UserMessage> userMessages = state.getUserMessages();
-        String lastUserMessage = userMessages.isEmpty() ? "" : 
-            userMessages.get(userMessages.size() - 1).singleText();
+        var lastUserMessage = state.getLastUserMessage();
             
-        if (lastUserMessage.isEmpty()) {
+        if (lastUserMessage == null) {
             state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
                 "No user query found, defaulting to TECHNICAL_EXPERT");
             return "TECHNICAL_EXPERT";
@@ -106,7 +116,7 @@ public class IntentClassifierAgent {
         
         // Build context for the classifier
         StringBuilder context = new StringBuilder();
-        context.append("User Query: ").append(lastUserMessage);
+        context.append("User Query: ").append(lastUserMessage.singleText());
         
         // Add conversation history for context
         String conversationContext = state.getConversationContext();
@@ -115,25 +125,54 @@ public class IntentClassifierAgent {
             context.append(conversationContext);
         }
         
-        String response = classifier.classifyIntent(context.toString());
-        
-        // Parse the response
-        String agent = "TECHNICAL_EXPERT"; // default
-        String reason = "Unable to classify intent";
-        
-        String[] lines = response.split("\n");
-        for (String line : lines) {
-            if (line.startsWith("AGENT:")) {
-                agent = line.substring(6).trim().toUpperCase();
-            } else if (line.startsWith("REASON:")) {
-                reason = line.substring(7).trim();
-            }
+        try {
+            IntentClassification result = classifier.classifyIntent(context.toString());
+            
+            // Log the routing decision
+            state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
+                "Directing to " + result.agent() + " - " + result.reason());
+            
+            return result.agent();
+            
+        } catch (Exception e) {
+            // Fallback to manual parsing if structured output fails
+            System.err.println("Error with structured output: " + e.getMessage());
+            state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
+                "Error in classification, defaulting to TECHNICAL_EXPERT");
+            return "TECHNICAL_EXPERT";
+        }
+    }
+    
+    public IntentClassification classifyIntentWithReason(CustomerState state) {
+        var lastUserMessage = state.getLastUserMessage();
+            
+        if (lastUserMessage == null) {
+            return new IntentClassification("TECHNICAL_EXPERT", "No user query found");
         }
         
-        // Log the routing decision
-        state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
-            "Directing to " + agent + " - " + reason);
+        // Build context for the classifier
+        StringBuilder context = new StringBuilder();
+        context.append("User Query: ").append(lastUserMessage.singleText());
         
-        return agent;
+        // Add conversation history for context
+        String conversationContext = state.getConversationContext();
+        if (!conversationContext.isEmpty()) {
+            context.append("\n\nRecent Conversation:\n");
+            context.append(conversationContext);
+        }
+        
+        try {
+            IntentClassification result = classifier.classifyIntent(context.toString());
+            
+            // Log the routing decision
+            state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
+                "Directing to " + result.agent() + " - " + result.reason());
+            
+            return result;
+            
+        } catch (Exception e) {
+            System.err.println("Error with structured output: " + e.getMessage());
+            return new IntentClassification("TECHNICAL_EXPERT", "Classification error occurred");
+        }
     }
 }
