@@ -10,13 +10,12 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Availability Coordinator Agent - Handles inventory and test drives
+ * Availability Coordinator Agent - Checks inventory and schedules test drives
  */
-public class AvailabilityCoordinatorAgent implements AgentNode {
+public class AvailabilityCoordinatorAgent {
     
     static class AvailabilityTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
@@ -27,14 +26,17 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
         }
         
         @Tool("Check vehicle availability at dealers")
-        public List<VehicleAvailability> checkAvailability(
+        public VehicleAvailability checkAvailability(
                 @P("Vehicle ID") String vehicleId,
-                @P("ZIP code") String zipCode) {
-            List<VehicleAvailability> availability = tools.checkAvailability(vehicleId, zipCode);
-            if (state != null && !availability.isEmpty()) {
-                state.logToolCall("AVAILABILITY_COORDINATOR", "checkAvailability", 
+                @P("ZIP code") String zipCode,
+                @P("Search radius in miles") int radiusMiles) {
+            logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
+            List<VehicleAvailability> availabilities = tools.checkAvailability(vehicleId, zipCode);
+            VehicleAvailability availability = availabilities.isEmpty() ? null : availabilities.get(0);
+            if (state != null && availability != null) {
+                state.logToolCall("AVAILABILITY_COORDINATOR", "checkAvailability",
                     String.format("vehicleId=%s, zipCode=%s", vehicleId, zipCode),
-                    "Found " + availability.size() + " dealers with " + vehicleId + " near " + zipCode);
+                    availability.inStock() ? "In stock" : "Not in stock - " + availability.estimatedDelivery());
             }
             return availability;
         }
@@ -43,45 +45,43 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
         public TestDriveAppointment scheduleTestDrive(
                 @P("Vehicle ID") String vehicleId,
                 @P("Dealer ID") String dealerId,
-                @P("Date and time (yyyy-MM-dd HH:mm)") String dateTimeStr,
+                @P("Preferred date/time (YYYY-MM-DD HH:MM)") String dateTimeStr,
                 @P("Customer name") String customerName,
                 @P("Customer phone") String customerPhone) {
-            LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr, 
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            TestDriveAppointment appointment = tools.scheduleTestDrive(vehicleId, dealerId, dateTime, customerName, customerPhone);
+            logToolCall("scheduleTestDrive", "vehicleId", vehicleId, "dealerId", dealerId, 
+                       "dateTime", dateTimeStr, "customer", customerName);
+            
+            LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr.replace(" ", "T"));
+            TestDriveAppointment appointment = tools.scheduleTestDrive(
+                vehicleId, dealerId, dateTime, customerName, customerPhone);
+            
             if (state != null && appointment != null) {
-                state.logToolCall("AVAILABILITY_COORDINATOR", "scheduleTestDrive", 
-                    String.format("vehicleId=%s, dealerId=%s, dateTime=%s", vehicleId, dealerId, dateTimeStr),
-                    "Scheduled test drive for " + vehicleId + " at " + dealerId + " on " + dateTimeStr);
+                state.logToolCall("AVAILABILITY_COORDINATOR", "scheduleTestDrive",
+                    String.format("vehicleId=%s, dealer=%s, time=%s", vehicleId, dealerId, dateTimeStr),
+                    "Confirmation: " + appointment.confirmationNumber());
             }
+            
             return appointment;
         }
     }
     
     interface AvailabilityAssistant {
         @SystemMessage("""
-            You are an availability coordinator for GM dealerships.
-            You help customers find vehicles in stock and schedule test drives.
+            You are a vehicle availability coordinator for GM dealerships.
+            Your responsibilities include:
+            - Checking real-time inventory at local dealers
+            - Finding vehicles in stock or with upcoming availability
+            - Scheduling test drive appointments
+            - Providing dealer location information
             
-            IMPORTANT: Extract vehicle preferences and location from conversation history.
-            Look for mentions of:
-            - Specific vehicles discussed or recommended
-            - Location/ZIP code preferences
-            - Timing requirements
-            - Test drive preferences
-            
-            You can:
-            - Check vehicle availability at nearby dealers
-            - Provide inventory information
-            - Schedule test drive appointments
-            - Suggest alternative vehicles if the desired one is not available
-            - Coordinate with multiple dealers
-            
-            Use the tools to check real-time availability.
-            Be helpful in finding the best options for customers.
-            Offer to schedule test drives when appropriate.
+            Always:
+            - Check availability before scheduling test drives
+            - Confirm customer contact information
+            - Provide clear next steps
+            - Set realistic expectations for vehicle availability
+            - Be helpful in finding alternative options if the desired vehicle isn't available
             """)
-        String coordinateAvailability(@UserMessage String conversation);
+        String assistWithAvailability(@UserMessage String conversation);
     }
     
     private final AvailabilityAssistant assistant;
@@ -95,24 +95,19 @@ public class AvailabilityCoordinatorAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
+    public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
         
-        String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
+        // Include conversation history
+        String conversation = state.getConversationContext();
         
-        conversation += "\nUser: " + query;
+        // Let the LLM process the request with tools
+        String response = assistant.assistWithAvailability(conversation);
         
-        String response = assistant.coordinateAvailability(conversation);
-        state.addToConversationHistory("Availability Coordinator: " + response);
+        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        state.addAiMessage(response);
         
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "AVAILABILITY_COORDINATOR";
+        return response;
     }
 }

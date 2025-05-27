@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * EV Specialist Agent - Expert on electric vehicles and charging
  */
-public class EVSpecialistAgent implements AgentNode {
+public class EVSpecialistAgent {
     
     static class EVTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
@@ -28,68 +28,72 @@ public class EVSpecialistAgent implements AgentNode {
         public ChargingCost calculateChargingCosts(
                 @P("Vehicle ID") String vehicleId,
                 @P("ZIP code") String zipCode,
-                @P("Daily miles driven") double dailyMiles) {
+                @P("Miles per year") int milesPerYear,
+                @P("Home charging percentage (0-100)") int homeChargingPercentage) {
+            logToolCall("calculateChargingCosts", "vehicleId", vehicleId, "zipCode", zipCode, 
+                       "milesPerYear", milesPerYear, "homeCharging%", homeChargingPercentage);
+            double dailyMiles = milesPerYear / 365.0;
             ChargingCost cost = tools.calculateChargingCosts(vehicleId, zipCode, dailyMiles);
             if (state != null && cost != null) {
-                state.logToolCall("EV_SPECIALIST", "calculateChargingCosts", 
-                    String.format("vehicleId=%s, zipCode=%s, dailyMiles=%.1f", vehicleId, zipCode, dailyMiles),
-                    "Charging cost for " + vehicleId + ": $" + cost.monthlyCost() + "/month");
+                state.logToolCall("EV_SPECIALIST", "calculateChargingCosts",
+                    String.format("vehicleId=%s, zipCode=%s, miles=%d", vehicleId, zipCode, milesPerYear),
+                    String.format("Monthly cost: $%.2f", cost.monthlyCost()));
             }
             return cost;
         }
         
         @Tool("Find charging stations near a location")
         public List<ChargingStation> findChargingStations(
-                @P("ZIP code") String zipCode,
-                @P("Search radius in miles") double radiusMiles) {
-            List<ChargingStation> stations = tools.findChargingStations(zipCode, radiusMiles);
-            if (state != null && !stations.isEmpty()) {
-                state.logToolCall("EV_SPECIALIST", "findChargingStations", 
-                    String.format("zipCode=%s, radiusMiles=%.1f", zipCode, radiusMiles),
-                    "Found " + stations.size() + " charging stations within " + radiusMiles + " miles of " + zipCode);
+                @P("ZIP code or city") String location,
+                @P("Radius in miles") int radiusMiles,
+                @P("Charging type (Level2, DC_Fast, All)") String chargingType) {
+            logToolCall("findChargingStations", "location", location, "radius", radiusMiles, "type", chargingType);
+            List<ChargingStation> stations = tools.findChargingStations(location, radiusMiles);
+            if (state != null) {
+                state.logToolCall("EV_SPECIALIST", "findChargingStations",
+                    String.format("location=%s, radius=%d miles", location, radiusMiles),
+                    String.format("Found %d charging stations", stations.size()));
             }
             return stations;
         }
         
-        @Tool("Estimate range for a specific trip")
+        @Tool("Estimate real-world range for an EV")
         public RangeEstimate estimateRange(
                 @P("Vehicle ID") String vehicleId,
-                @P("Trip distance in miles") double tripDistance,
-                @P("Weather condition (hot, cold, rain, normal)") String weatherCondition) {
-            RangeEstimate estimate = tools.estimateRangeForTrip(vehicleId, tripDistance, weatherCondition);
-            if (state != null && estimate != null) {
-                state.logToolCall("EV_SPECIALIST", "estimateRange", 
-                    String.format("vehicleId=%s, tripDistance=%.1f, weather=%s", vehicleId, tripDistance, weatherCondition),
-                    "Range estimate for " + vehicleId + ": " + estimate.adjustedRange() + " miles in " + weatherCondition + " weather");
+                @P("Temperature (F)") int temperature,
+                @P("Highway percentage (0-100)") int highwayPercentage,
+                @P("Use AC/Heat") boolean useClimate) {
+            logToolCall("estimateRange", "vehicleId", vehicleId, "temp", temperature, 
+                       "highway%", highwayPercentage, "climate", useClimate);
+            // Convert to weather condition string
+            String weatherCondition = temperature < 32 ? "cold" : temperature > 90 ? "hot" : "moderate";
+            double tripDistance = 200; // Default trip distance for estimation
+            RangeEstimate range = tools.estimateRangeForTrip(vehicleId, tripDistance, weatherCondition);
+            if (state != null && range != null) {
+                state.logToolCall("EV_SPECIALIST", "estimateRange",
+                    String.format("vehicleId=%s, temp=%dF, highway=%d%%", vehicleId, temperature, highwayPercentage),
+                    String.format("Estimated range: %.0f miles", range.adjustedRange()));
             }
-            return estimate;
+            return range;
         }
     }
     
     interface EVAssistant {
         @SystemMessage("""
-            You are an electric vehicle specialist for GM.
-            You help customers understand EVs and address their concerns.
+            You are an EV specialist for GM electric vehicles.
+            Your expertise includes:
+            - Electric vehicle technology and benefits
+            - Charging infrastructure and costs
+            - Range estimation and factors affecting range
+            - EV ownership experience
+            - Addressing common EV concerns (range anxiety, charging time, etc.)
             
-            IMPORTANT: Extract customer needs and concerns from the conversation history.
-            Look for mentions of:
-            - Daily driving distances or commute patterns
-            - Home charging availability
-            - Range concerns or long trips
-            - Environmental preferences
-            
-            You can:
-            - Explain EV technology and benefits
-            - Calculate charging costs and savings
-            - Find charging infrastructure
-            - Estimate real-world range
-            - Address range anxiety
-            - Compare EVs to gas vehicles
-            - Explain home charging setup
-            
-            Use the tools to provide accurate information.
-            Be enthusiastic about EV technology while being honest about limitations.
-            Help customers determine if an EV fits their lifestyle.
+            Always:
+            - Be enthusiastic about EV technology
+            - Address concerns honestly and factually
+            - Provide practical advice for EV ownership
+            - Compare EV costs to gas vehicles when relevant
+            - Emphasize GM's EV advantages
             """)
         String provideEVGuidance(@UserMessage String conversation);
     }
@@ -105,23 +109,19 @@ public class EVSpecialistAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
+    public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
         
-        String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
-        conversation += "\nUser: " + query;
+        // Include conversation history
+        String conversation = state.getConversationContext();
         
+        // Let the LLM process the request with tools
         String response = assistant.provideEVGuidance(conversation);
-        state.addToConversationHistory("EV Specialist: " + response);
         
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "EV_SPECIALIST";
+        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        state.addAiMessage(response);
+        
+        return response;
     }
 }

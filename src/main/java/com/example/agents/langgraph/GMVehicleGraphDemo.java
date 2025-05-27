@@ -31,10 +31,10 @@ public class GMVehicleGraphDemo {
                 .build();
         
         GMVehicleGraphAgent agent = new GMVehicleGraphAgent(model);
-        CustomerState state = agent.startNewConversation();
+        CustomerState state = agent.createNewState();
         
         // Print initial greeting
-        System.out.println(state.getConversationHistory().get(0).replace("GM Vehicle Assistant: ", ""));
+        System.out.println("Hello! I'm your GM Vehicle Assistant. I can help you find the perfect vehicle. What are you looking for today?");
         
         Scanner scanner = new Scanner(System.in);
         
@@ -49,9 +49,7 @@ public class GMVehicleGraphDemo {
             
             if (userInput.equalsIgnoreCase("history")) {
                 System.out.println("\n=== Conversation History ===");
-                for (String msg : state.getConversationHistory()) {
-                    System.out.println(msg);
-                }
+                System.out.println(state.getConversationContext());
                 System.out.println("=========================");
                 continue;
             }

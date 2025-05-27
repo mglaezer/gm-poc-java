@@ -18,7 +18,7 @@ import com.example.agents.MockVehicleData;
 /**
  * Customer Profiler Agent - Understands customer needs and builds profiles
  */
-public class CustomerProfilerAgent implements AgentNode {
+public class CustomerProfilerAgent {
     
     static class ProfilerTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
@@ -48,132 +48,132 @@ public class CustomerProfilerAgent implements AgentNode {
         public CustomerProfile buildProfile(
                 @P("Family size") int familySize,
                 @P("Daily commute description") String dailyCommute,
-                @P("Weekend usage") String weekendUsage,
-                @P("Must have features") List<String> mustHaveFeatures,
+                @P("Weekend usage description") String weekendUsage,
+                @P("Must-have features") List<String> mustHaveFeatures,
                 @P("Budget") double budget,
                 @P("Credit score (excellent, good, fair, poor)") String creditScore) {
-            logToolCall("buildProfile", "familySize", familySize, "budget", budget, "creditScore", creditScore);
-            CustomerRequirements req = new CustomerRequirements(
-                familySize, dailyCommute, weekendUsage, mustHaveFeatures, budget, creditScore
+            logToolCall("buildProfile", "familySize", familySize, "dailyCommute", dailyCommute, 
+                      "weekendUsage", weekendUsage, "budget", budget);
+            
+            // Create preferences list combining all usage patterns
+            List<String> preferences = new ArrayList<>();
+            if (dailyCommute.toLowerCase().contains("highway") || dailyCommute.toLowerCase().contains("long")) {
+                preferences.add("fuel efficiency");
+                preferences.add("comfortable seats");
+            }
+            if (weekendUsage.toLowerCase().contains("camping") || weekendUsage.toLowerCase().contains("outdoor")) {
+                preferences.add("cargo space");
+                preferences.add("all-wheel drive");
+            }
+            if (mustHaveFeatures != null) {
+                preferences.addAll(mustHaveFeatures);
+            }
+            
+            String primaryUsage = dailyCommute + " / " + weekendUsage;
+            CustomerProfile baseProfile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
+            
+            // Adjust budget range (80% to 100% of stated budget)
+            double adjustedBudgetMin = budget * 0.8;
+            double adjustedBudgetMax = budget;
+            
+            CustomerProfile profile = new CustomerProfile(
+                familySize,
+                primaryUsage,
+                preferences,
+                adjustedBudgetMin,
+                adjustedBudgetMax,
+                baseProfile.preferredCategories(),
+                baseProfile.needsTowing(),
+                baseProfile.needsOffRoad(),
+                baseProfile.fuelPreference()
             );
-            CustomerProfile profile = tools.buildCustomerProfile(req);
+            
             if (state != null) {
                 state.logToolCall("CUSTOMER_PROFILER", "buildProfile",
-                    String.format("budget=%.0f, familySize=%d", budget, familySize),
-                    String.format("Complete profile: budget=$%.0f-%.0f, categories=%s, creditScore=%s", 
-                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories(), creditScore));
+                    String.format("familySize=%d, budget=$%.0f, credit=%s", familySize, budget, creditScore),
+                    String.format("Profile: budget=$%.0f-%.0f, categories=%s, primaryUsage=%s", 
+                        profile.budgetMin(), profile.budgetMax(), profile.preferredCategories(), profile.primaryUsage()));
             }
+            
             return profile;
         }
         
-        @Tool("Suggest vehicle categories based on customer profile")
-        public List<VehicleCategory> suggestCategories(
-                @P("Customer profile") CustomerProfile profile) {
-            logToolCall("suggestCategories", "profile", profile.familySize() + " family, $" + profile.budgetMin() + "-$" + profile.budgetMax());
-            List<VehicleCategory> categories = tools.suggestVehicleCategories(profile);
+        @Tool("Suggest vehicle categories based on profile")
+        public List<String> suggestCategories(@P("Customer profile") CustomerProfile profile) {
+            logToolCall("suggestCategories", "profile", profile);
+            List<String> categories = profile.preferredCategories().stream()
+                .map(VehicleCategory::getDisplayName)
+                .collect(Collectors.toList());
+            
             if (state != null) {
                 state.logToolCall("CUSTOMER_PROFILER", "suggestCategories",
-                    "profile", 
-                    "Suggested categories: " + categories);
+                    String.format("budget=$%.0f-%.0f", profile.budgetMin(), profile.budgetMax()),
+                    String.format("Suggested: %s", categories));
             }
+            
             return categories;
         }
         
-        @Tool("Filter existing vehicle recommendations based on user preferences")
+        @Tool("Filter vehicles based on customer preferences")
         public List<VehicleInfo> filterVehicles(
-                @P("Budget maximum or 0 for no limit") double maxBudget,
-                @P("Vehicle category preference or 'any'") String preferredCategory,
-                @P("Must-have feature or 'none'") String mustHaveFeature) {
-            logToolCall("filterVehicles", "maxBudget", maxBudget, "category", preferredCategory, "feature", mustHaveFeature);
+                @P("List of vehicle IDs to filter") List<String> vehicleIds,
+                @P("Customer profile") CustomerProfile profile) {
+            logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
             
-            // Get vehicles from mock data for now - in a real system this would parse from conversation
-            List<VehicleInfo> currentVehicles = MockVehicleData.VEHICLES;
-            if (currentVehicles == null || currentVehicles.isEmpty()) {
-                return new ArrayList<>();
-            }
+            // Note: In production, this would use ToolsImpl but for now we'll use MockVehicleData directly
+            List<VehicleInfo> filtered = MockVehicleData.VEHICLES.stream()
+                .filter(v -> vehicleIds.contains(v.id()))
+                .filter(v -> v.price() >= profile.budgetMin() && v.price() <= profile.budgetMax())
+                .filter(v -> {
+                    // Check if vehicle category matches preferences
+                    String vehicleCategory = v.category();
+                    return profile.preferredCategories().stream()
+                        .anyMatch(cat -> cat.getDisplayName().equalsIgnoreCase(vehicleCategory));
+                })
+                .collect(Collectors.toList());
             
-            List<VehicleInfo> filtered = new ArrayList<>();
-            for (VehicleInfo vehicle : currentVehicles) {
-                boolean matches = true;
-                
-                // Filter by budget
-                if (maxBudget > 0 && vehicle.price() > maxBudget) {
-                    matches = false;
-                }
-                
-                // Filter by category (rough matching)
-                if (!preferredCategory.equalsIgnoreCase("any")) {
-                    String vehicleCategory = vehicle.category().toLowerCase();
-                    String preferred = preferredCategory.toLowerCase();
-                    if (!vehicleCategory.contains(preferred) && !preferred.contains(vehicleCategory)) {
-                        matches = false;
-                    }
-                }
-                
-                if (matches) {
-                    filtered.add(vehicle);
-                }
-            }
-            
-            // Log filtered results to conversation
             if (state != null) {
-                String result = filtered.isEmpty() ? "No vehicles match the criteria" :
-                    String.format("Filtered to %d vehicles: %s", filtered.size(),
-                        filtered.stream().limit(3)
-                            .map(v -> v.make().getDisplayName() + " " + v.model())
-                            .collect(Collectors.joining(", ")) + (filtered.size() > 3 ? "..." : ""));
-                state.logToolCall("CUSTOMER_PROFILER", "filterVehicles", 
-                    String.format("budget=%.0f, category=%s", maxBudget, preferredCategory), result);
+                state.logToolCall("CUSTOMER_PROFILER", "filterVehicles",
+                    String.format("filtering %d vehicles", vehicleIds.size()),
+                    String.format("Found %d matching vehicles", filtered.size()));
             }
+            
             return filtered;
         }
         
-        @Tool("Create a basic profile with minimal information")
+        @Tool("Create a quick profile with minimal information")
         public CustomerProfile createQuickProfile(
-                @P("Budget range or 0 if not specified") double budget,
-                @P("Vehicle size preference or 'any'") String vehicleSize) {
-            logToolCall("createQuickProfile", "budget", budget, "vehicleSize", vehicleSize);
+                @P("Budget") double budget,
+                @P("Vehicle type preference (SUV, Truck, Sedan, etc)") String vehicleType) {
+            logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
             
-            // Determine budget range
-            double budgetMin = budget > 0 ? budget * 0.8 : 25000;
-            double budgetMax = budget > 0 ? budget * 1.2 : 80000;
+            // Determine family size based on vehicle type
+            int familySize = vehicleType.toLowerCase().contains("suv") || 
+                           vehicleType.toLowerCase().contains("truck") ? 4 : 2;
             
-            // Determine categories based on size preference
-            List<VehicleCategory> categories = new ArrayList<>();
-            if (vehicleSize.toLowerCase().contains("small") || vehicleSize.toLowerCase().contains("compact")) {
-                categories.add(VehicleCategory.SEDAN);
-            } else if (vehicleSize.toLowerCase().contains("large") || vehicleSize.toLowerCase().contains("full")) {
-                categories.add(VehicleCategory.TRUCK);
-                categories.add(VehicleCategory.SUV);
-            } else if (vehicleSize.toLowerCase().contains("suv")) {
-                categories.add(VehicleCategory.SUV);
-            } else if (vehicleSize.toLowerCase().contains("truck")) {
-                categories.add(VehicleCategory.TRUCK);
-            } else {
-                // Default to showing variety
-                categories.add(VehicleCategory.SUV);
-                categories.add(VehicleCategory.TRUCK);
-                categories.add(VehicleCategory.SEDAN);
-            }
+            List<String> preferences = new ArrayList<>();
+            VehicleCategory category = VehicleCategory.fromString(vehicleType);
+            List<VehicleCategory> categories = category != null ? 
+                List.of(category) : List.of(VehicleCategory.SUV, VehicleCategory.SEDAN);
             
             CustomerProfile profile = new CustomerProfile(
-                0, // unknown family size
-                "general", // general usage
-                Arrays.asList("value", "reliability"), // default preferences
-                budgetMin,
-                budgetMax,
+                familySize,
+                "General use",
+                preferences,
+                budget * 0.8,
+                budget,
                 categories,
-                false, // no towing by default
-                false, // no off-road by default
-                "gasoline" // default fuel preference
+                false,
+                false,
+                "gasoline"
             );
             
             if (state != null) {
                 state.logToolCall("CUSTOMER_PROFILER", "createQuickProfile",
-                    String.format("budget=%.0f, size=%s", budget, vehicleSize),
-                    String.format("Quick profile: budget=$%.0f-%.0f, categories=%s", 
-                        budgetMin, budgetMax, categories));
+                    String.format("budget=$%.0f, type=%s", budget, vehicleType),
+                    String.format("Quick profile: categories=%s", categories));
             }
+            
             return profile;
         }
     }
@@ -181,34 +181,29 @@ public class CustomerProfilerAgent implements AgentNode {
     interface ProfilerAssistant {
         @SystemMessage("""
             You are a customer profiling specialist for GM vehicles.
-            Your job is to understand customer needs with MINIMAL questions.
+            Your role is to understand customer needs and build comprehensive profiles.
             
-            IMPORTANT RULES:
-            1. DETECT THE MODE:
-               - NARROWING MODE: If user just saw 4+ vehicle options and needs help choosing
-               - INITIAL MODE: If no profile exists and user needs basic profiling
-            2. For NARROWING MODE:
-               - Ask ONLY 1-2 key filtering questions to reduce options
-               - Focus on: budget range, vehicle size, or key must-have feature
-               - Say: "I can help narrow this down with 1-2 quick questions"
-            3. For INITIAL MODE:
-               - Ask MAXIMUM 2 questions at a time
-               - Focus on budget and size preference
-            4. Always offer: "Or if you'd prefer, I can show you some popular options right away"
-            5. If user seems reluctant, immediately offer to skip profiling
-            6. Extract information from context clues rather than asking directly
-            7. If user asks to \"show me\" or \"see\" vehicles, redirect to TechnicalExpert
+            You should:
+            - Ask minimal questions to understand needs
+            - Extract information from conversation context
+            - Build profiles that capture budget, family size, usage patterns
+            - Suggest appropriate vehicle categories
+            - Help narrow down vehicle choices
             
-            Essential information only:
-            - Budget range (most important)
-            - Vehicle size preference
-            - Primary use (only if not obvious)
+            Focus on:
+            - Family size and passenger needs
+            - Daily commute and weekend activities
+            - Budget constraints
+            - Must-have features
+            - Fuel preferences
             
-            Use the tools to create a basic profile even with minimal information.
-            Be concise and respectful of the user's time.
-            NEVER ask more than 2 questions in one response.
+            Always try to extract this information from the conversation history first
+            before asking new questions. Be efficient and helpful.
+            
+            When user seems overwhelmed with too many choices, use filterVehicles to narrow down.
+            When starting fresh, use buildProfile or createQuickProfile based on available info.
             """)
-        String profileCustomer(@UserMessage String conversation);
+        String assistCustomer(@UserMessage String conversation);
     }
     
     private final ProfilerAssistant assistant;
@@ -222,61 +217,19 @@ public class CustomerProfilerAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
+    public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
         
-        String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
+        // Include conversation history
+        String conversation = state.getConversationContext();
         
-        // Check conversation history to determine context
-        List<String> recentVehicles = state.getRecentVehiclesMentioned();
-        boolean isNarrowingMode = false;
+        // Let the LLM process the request with tools
+        String response = assistant.assistCustomer(conversation);
         
-        // Look for recent searches that found many vehicles
-        for (String entry : recentVehicles) {
-            if (entry.contains("Found") && entry.contains("vehicles")) {
-                // Extract number if possible
-                String[] parts = entry.split(" ");
-                for (int i = 0; i < parts.length - 1; i++) {
-                    if (parts[i].equals("Found")) {
-                        try {
-                            int count = Integer.parseInt(parts[i + 1]);
-                            if (count >= 4) {
-                                isNarrowingMode = true;
-                                conversation += "\n\nNARROWING MODE: User saw " + count + " vehicles and needs help choosing.";
-                                conversation += "\n" + entry;
-                                break;
-                            }
-                        } catch (NumberFormatException e) {
-                            // Ignore
-                        }
-                    }
-                }
-            }
-        }
+        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        state.addAiMessage(response);
         
-        // The conversation history contains all user preferences and context
-        
-        // All context is in conversation history
-        
-        conversation += "\nUser: " + query;
-        
-        String response = assistant.profileCustomer(conversation);
-        
-        // Log the response
-        state.logAgentAction("CUSTOMER_PROFILER", "Response", response);
-        state.addToConversationHistory("Customer Profiler: " + response);
-        
-        // Usually route to technical expert after profiling to show vehicles
-        state.setNextAgent("TECHNICAL_EXPERT");
-        
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "CUSTOMER_PROFILER";
+        return response;
     }
 }

@@ -13,14 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 
-This is a Java Maven project for experimenting with LangChain4j, a Java implementation of LangChain for building LLM-powered applications.
-
-### Key Dependencies
-- **LangChain4j Core**: Main framework for building LLM applications
-- **LangChain4j OpenAI**: OpenAI integration for chat models
-- **LangChain4j Embeddings**: Vector embeddings support
-- **LangChain4j Document Loaders**: File system document loading
-- **LangChain4j Easy RAG**: Simplified RAG implementation
+This is a Java Maven project for experimenting with LangChain4j, and LangGraph4j
 
 ### Project Structure
 - `src/main/java/com/example/`: Main application code

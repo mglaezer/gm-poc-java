@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Intent Classifier Agent - Routes user queries to appropriate expert agents
  */
-public class IntentClassifierAgent implements AgentNode {
+public class IntentClassifierAgent {
     
     interface IntentClassifier {
         @SystemMessage("""
@@ -92,50 +92,33 @@ public class IntentClassifierAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
-        String query = state.getCurrentQuery();
-        if (query == null || query.isEmpty()) {
-            // Always default to technical expert to show options
-            state.setNextAgent("TECHNICAL_EXPERT");
-            state.setRoutingReason("Showing popular vehicle options");
-            return state;
+    public String classifyIntent(CustomerState state) {
+        // Get the last user message specifically
+        List<dev.langchain4j.data.message.UserMessage> userMessages = state.getUserMessages();
+        String lastUserMessage = userMessages.isEmpty() ? "" : 
+            userMessages.get(userMessages.size() - 1).singleText();
+            
+        if (lastUserMessage.isEmpty()) {
+            state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
+                "No user query found, defaulting to TECHNICAL_EXPERT");
+            return "TECHNICAL_EXPERT";
         }
         
         // Build context for the classifier
         StringBuilder context = new StringBuilder();
-        context.append("User Query: ").append(query);
+        context.append("User Query: ").append(lastUserMessage);
         
         // Add conversation history for context
-        List<String> conversationHistory = state.getConversationHistory();
-        if (!conversationHistory.isEmpty()) {
-            context.append("\n\nRecent Conversation (last 10 messages):\n");
-            int start = Math.max(0, conversationHistory.size() - 10);
-            for (int i = start; i < conversationHistory.size(); i++) {
-                context.append(conversationHistory.get(i)).append("\n");
-            }
-        }
-        
-        // Extract context from conversation history
-        List<String> recentVehicles = state.getRecentVehiclesMentioned();
-        if (!recentVehicles.isEmpty()) {
-            context.append("\nRecent vehicle searches: ").append(recentVehicles.size());
-            // Check if many vehicles were found in recent searches
-            for (String vehicleEntry : recentVehicles) {
-                if (vehicleEntry.contains("Found") && vehicleEntry.contains("vehicles")) {
-                    context.append("\n").append(vehicleEntry);
-                }
-            }
-        }
-        
-        if (state.hasRecentFinancingDiscussion()) {
-            context.append("\nFinancing: Recent financing discussion detected");
+        String conversationContext = state.getConversationContext();
+        if (!conversationContext.isEmpty()) {
+            context.append("\n\nRecent Conversation:\n");
+            context.append(conversationContext);
         }
         
         String response = classifier.classifyIntent(context.toString());
         
         // Parse the response
-        String agent = "CUSTOMER_PROFILER"; // default
+        String agent = "TECHNICAL_EXPERT"; // default
         String reason = "Unable to classify intent";
         
         String[] lines = response.split("\n");
@@ -147,16 +130,10 @@ public class IntentClassifierAgent implements AgentNode {
             }
         }
         
-        state.setNextAgent(agent);
-        state.setRoutingReason(reason);
+        // Log the routing decision
         state.logAgentAction("INTENT_CLASSIFIER", "Routing", 
             "Directing to " + agent + " - " + reason);
         
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "INTENT_CLASSIFIER";
+        return agent;
     }
 }

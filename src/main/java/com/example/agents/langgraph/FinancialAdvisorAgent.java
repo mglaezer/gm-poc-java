@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Financial Advisor Agent - Handles financing, budgeting, and insurance
  */
-public class FinancialAdvisorAgent implements AgentNode {
+public class FinancialAdvisorAgent {
     
     static class FinancialTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
@@ -48,7 +48,7 @@ public class FinancialAdvisorAgent implements AgentNode {
             if (state != null && !options.isEmpty()) {
                 state.logToolCall("FINANCIAL_ADVISOR", "compareFinancing", 
                     String.format("vehicleId=%s, creditScore=%s", vehicleId, creditScore),
-                    "Compared " + options.size() + " financing options for " + vehicleId);
+                    String.format("Generated %d financing options", options.size()));
             }
             return options;
         }
@@ -56,30 +56,29 @@ public class FinancialAdvisorAgent implements AgentNode {
         @Tool("Calculate insurance costs")
         public InsuranceCost calculateInsurance(
                 @P("Vehicle ID") String vehicleId,
-                @P("ZIP code") String zipCode,
-                @P("Driver age") int age,
-                @P("Years licensed") int yearsLicensed,
-                @P("Accidents in last 5 years") int accidents,
-                @P("Credit score") String creditScore) {
-            DriverProfile driver = new DriverProfile(age, "unknown", yearsLicensed, accidents, 0, creditScore);
-            InsuranceCost cost = tools.calculateInsuranceCosts(vehicleId, zipCode, driver);
-            if (state != null && cost != null) {
+                @P("Driver age") int driverAge,
+                @P("Driving record (clean, minor_issues, major_issues)") String drivingRecord,
+                @P("Coverage level (basic, standard, comprehensive)") String coverageLevel) {
+            InsuranceCost insurance = tools.calculateInsuranceCosts(vehicleId, "00000",
+                new DriverProfile(driverAge, "N/A", 10, 0, 0, drivingRecord));
+            if (state != null && insurance != null) {
                 state.logToolCall("FINANCIAL_ADVISOR", "calculateInsurance", 
-                    String.format("vehicleId=%s, zipCode=%s, age=%d, yearsLicensed=%d", vehicleId, zipCode, age, yearsLicensed),
-                    "Calculated insurance for " + vehicleId + ": $" + cost.monthlyPremium() + "/month");
+                    String.format("vehicleId=%s, age=%d, record=%s", vehicleId, driverAge, drivingRecord),
+                    String.format("Monthly premium: $%.2f", insurance.monthlyPremium()));
             }
-            return cost;
+            return insurance;
         }
         
         @Tool("Suggest budget allocation")
         public BudgetRecommendation suggestBudget(
-                @P("Monthly income") double monthlyIncome,
-                @P("Monthly expenses") double monthlyExpenses) {
-            BudgetRecommendation budget = tools.suggestBudgetAllocation(monthlyIncome, monthlyExpenses);
+                @P("Annual income") double annualIncome,
+                @P("Monthly expenses") double monthlyExpenses,
+                @P("Current car payment") double currentCarPayment) {
+            BudgetRecommendation budget = tools.suggestBudgetAllocation(annualIncome / 12, monthlyExpenses);
             if (state != null && budget != null) {
                 state.logToolCall("FINANCIAL_ADVISOR", "suggestBudget", 
-                    String.format("monthlyIncome=%.2f, monthlyExpenses=%.2f", monthlyIncome, monthlyExpenses),
-                    "Suggested max car payment: $" + budget.maxMonthlyPayment() + "/month");
+                    String.format("income=$%.0f, expenses=$%.0f", annualIncome, monthlyExpenses),
+                    String.format("Recommended max payment: $%.2f", budget.maxMonthlyPayment()));
             }
             return budget;
         }
@@ -88,26 +87,19 @@ public class FinancialAdvisorAgent implements AgentNode {
     interface FinancialAssistant {
         @SystemMessage("""
             You are a financial advisor specializing in vehicle financing.
-            You help customers understand financing options and make informed decisions.
+            Help customers understand their financing options and make informed decisions.
             
-            IMPORTANT: Extract budget and credit score information from the conversation history.
-            Look for mentions of:
-            - Budget ranges or monthly payment preferences
-            - Credit score or credit history
-            - Down payment capabilities
-            - Current monthly expenses
+            Your expertise includes:
+            - Calculating monthly payments and total costs
+            - Comparing lease vs buy options
+            - Estimating insurance costs
+            - Budget planning and affordability analysis
             
-            You can:
-            - Calculate monthly payments based on the customer's budget
-            - Compare financing terms using their credit score
-            - Estimate insurance costs
-            - Analyze total cost of ownership
-            - Suggest budget allocations
-            - Explain financing concepts
-            
-            Use the tools to provide accurate calculations.
-            Be clear about all costs and fees.
-            Focus on options that fit within the customer's stated budget.
+            Always:
+            - Consider the customer's financial situation
+            - Explain the pros and cons of different options
+            - Suggest the most cost-effective solutions
+            - Be transparent about all costs involved
             """)
         String provideFinancialAdvice(@UserMessage String conversation);
     }
@@ -123,24 +115,19 @@ public class FinancialAdvisorAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
+    public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
         
-        String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
+        // Include conversation history
+        String conversation = state.getConversationContext();
         
-        conversation += "\nUser: " + query;
-        
+        // Let the LLM process the request with tools
         String response = assistant.provideFinancialAdvice(conversation);
-        state.addToConversationHistory("Financial Advisor: " + response);
         
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "FINANCIAL_ADVISOR";
+        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        state.addAiMessage(response);
+        
+        return response;
     }
 }

@@ -11,9 +11,13 @@ import java.util.Map;
  */
 public class GMVehicleGraphAgent {
     
-    private final Map<String, AgentNode> agents;
     private final IntentClassifierAgent router;
-    private final ChatModel model;
+    private final CustomerProfilerAgent customerProfiler;
+    private final TechnicalExpertAgent technicalExpert;
+    private final FinancialAdvisorAgent financialAdvisor;
+    private final AvailabilityCoordinatorAgent availabilityCoordinator;
+    private final NegotiationCoachAgent negotiationCoach;
+    private final EVSpecialistAgent evSpecialist;
     
     public GMVehicleGraphAgent() {
         this(OpenAiChatModel.builder()
@@ -24,23 +28,14 @@ public class GMVehicleGraphAgent {
     }
     
     public GMVehicleGraphAgent(ChatModel model) {
-        this.model = model;
-        this.agents = new HashMap<>();
-        
         // Initialize all agents
         this.router = new IntentClassifierAgent(model);
-        
-        // Register all specialist agents
-        registerAgent(new CustomerProfilerAgent(model));
-        registerAgent(new TechnicalExpertAgent(model));
-        registerAgent(new FinancialAdvisorAgent(model));
-        registerAgent(new AvailabilityCoordinatorAgent(model));
-        registerAgent(new NegotiationCoachAgent(model));
-        registerAgent(new EVSpecialistAgent(model));
-    }
-    
-    private void registerAgent(AgentNode agent) {
-        agents.put(agent.getName(), agent);
+        this.customerProfiler = new CustomerProfilerAgent(model);
+        this.technicalExpert = new TechnicalExpertAgent(model);
+        this.financialAdvisor = new FinancialAdvisorAgent(model);
+        this.availabilityCoordinator = new AvailabilityCoordinatorAgent(model);
+        this.negotiationCoach = new NegotiationCoachAgent(model);
+        this.evSpecialist = new EVSpecialistAgent(model);
     }
     
     /**
@@ -51,102 +46,53 @@ public class GMVehicleGraphAgent {
             state = new CustomerState();
         }
         
-        state.setCurrentQuery(userQuery);
-        state.addToConversationHistory("User: " + userQuery);
+        // Add user query to messages
+        state.addUserMessage(userQuery);
         
-        // First, route through intent classifier
+        // Route through intent classifier
         System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
-        state = router.process(state);
+        String nextAgentName = router.classifyIntent(state);
         
-        // Get the next agent to process
-        String nextAgentName = state.getNextAgent();
-        
-        // If we have a valid next agent, process through it
-        if (nextAgentName != null && agents.containsKey(nextAgentName)) {
-            String reason = state.getRoutingReason();
-            if (reason != null && !reason.isEmpty()) {
-                System.out.println("➡️  Agent: " + nextAgentName + " (Reason: " + reason + ")");
-            } else {
-                System.out.println("➡️  Agent: " + nextAgentName);
-            }
-            AgentNode nextAgent = agents.get(nextAgentName);
-            state = nextAgent.process(state);
+        // Execute the appropriate agent
+        String response;
+        switch (nextAgentName) {
+            case "CUSTOMER_PROFILER":
+                System.out.println("➡️  Agent: Customer Profiler");
+                response = customerProfiler.execute(state, userQuery);
+                break;
+            case "TECHNICAL_EXPERT":
+                System.out.println("➡️  Agent: Technical Expert");
+                response = technicalExpert.execute(state, userQuery);
+                break;
+            case "FINANCIAL_ADVISOR":
+                System.out.println("➡️  Agent: Financial Advisor");
+                response = financialAdvisor.execute(state, userQuery);
+                break;
+            case "AVAILABILITY_COORDINATOR":
+                System.out.println("➡️  Agent: Availability Coordinator");
+                response = availabilityCoordinator.execute(state, userQuery);
+                break;
+            case "NEGOTIATION_COACH":
+                System.out.println("➡️  Agent: Negotiation Coach");
+                response = negotiationCoach.execute(state, userQuery);
+                break;
+            case "EV_SPECIALIST":
+                System.out.println("➡️  Agent: EV Specialist");
+                response = evSpecialist.execute(state, userQuery);
+                break;
+            default:
+                System.out.println("➡️  Agent: Technical Expert (default)");
+                response = technicalExpert.execute(state, userQuery);
+                break;
         }
         
-        // Return the last response from conversation history
-        var history = state.getConversationHistory();
-        if (!history.isEmpty()) {
-            return history.get(history.size() - 1);
-        }
-        
-        return "I'm here to help you find the perfect GM vehicle. What are you looking for?";
+        return response;
     }
     
     /**
-     * Start a new conversation
+     * Create a new customer state
      */
-    public CustomerState startNewConversation() {
-        CustomerState state = new CustomerState();
-        state.addToConversationHistory(
-            "GM Vehicle Assistant: Hello! I'm here to help you find the perfect GM vehicle. " +
-            "You can:\n" +
-            "• Ask about specific vehicles (e.g., \"Tell me about the Silverado\")\n" +
-            "• Compare models (e.g., \"Compare Tahoe vs Traverse\")\n" +
-            "• Get recommendations (e.g., \"Best SUV under $50k\")\n" +
-            "• Check financing options\n" +
-            "• Schedule test drives\n\n" +
-            "What would you like to know?"
-        );
-        return state;
-    }
-    
-    /**
-     * Process a query with automatic routing through multiple agents if needed
-     */
-    public String processWithAutoRouting(String userQuery, CustomerState state, int maxSteps) {
-        if (state == null) {
-            state = startNewConversation();
-        }
-        
-        String lastResponse = "";
-        
-        for (int i = 0; i < maxSteps; i++) {
-            state.setCurrentQuery(userQuery);
-            
-            // Route and process
-            if (i == 0) {
-                System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
-            }
-            state = router.process(state);
-            String nextAgentName = state.getNextAgent();
-            
-            if (nextAgentName == null || !agents.containsKey(nextAgentName)) {
-                break;
-            }
-            
-            String reason = state.getRoutingReason();
-            if (reason != null && !reason.isEmpty()) {
-                System.out.println("➡️  Agent: " + nextAgentName + " (Reason: " + reason + ")");
-            } else {
-                System.out.println("➡️  Agent: " + nextAgentName);
-            }
-            AgentNode agent = agents.get(nextAgentName);
-            state = agent.process(state);
-            
-            // Get the last response
-            var history = state.getConversationHistory();
-            if (!history.isEmpty()) {
-                lastResponse = history.get(history.size() - 1);
-            }
-            
-            // Check if we should continue routing
-            // In a real implementation, this would be more sophisticated
-            if (lastResponse.toLowerCase().contains("would you like") || 
-                lastResponse.toLowerCase().contains("anything else")) {
-                break;
-            }
-        }
-        
-        return lastResponse;
+    public CustomerState createNewState() {
+        return new CustomerState();
     }
 }

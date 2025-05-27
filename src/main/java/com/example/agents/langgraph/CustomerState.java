@@ -1,107 +1,120 @@
 package com.example.agents.langgraph;
 
+import dev.langchain4j.data.message.*;
 import java.util.*;
 
 /**
- * Simplified CustomerState that uses conversation history as the single source of truth.
- * All agent interactions, tool results, and user responses are stored in the conversation.
+ * CustomerState that maintains conversation history as list of ChatMessage objects.
+ * All agent interactions, tool results, and user responses are stored as properly typed messages.
  */
 public class CustomerState {
-    private final List<String> conversationHistory;
-    private String currentQuery;
-    private String nextAgent;
-    private String routingReason;
+    private final List<ChatMessage> messages;
     
     public CustomerState() {
-        this.conversationHistory = new ArrayList<>();
+        this.messages = new ArrayList<>();
     }
     
-    // Conversation history management
-    public List<String> getConversationHistory() {
-        return new ArrayList<>(conversationHistory);
+    public List<ChatMessage> getMessages() {
+        return new ArrayList<>(messages);
     }
     
-    public void addToConversationHistory(String entry) {
-        conversationHistory.add(entry);
-        // Keep only last 30 entries to prevent overflow
-        if (conversationHistory.size() > 30) {
-            conversationHistory.remove(0);
+    public void addMessage(ChatMessage message) {
+        messages.add(message);
+    }
+    
+    public void addUserMessage(String content) {
+        messages.add(UserMessage.from(content));
+    }
+    
+    public void addAiMessage(String content) {
+        messages.add(AiMessage.from(content));
+    }
+    
+    public void addSystemMessage(String content) {
+        messages.add(SystemMessage.from(content));
+    }
+    
+    public ChatMessage getLastMessage() {
+        return messages.isEmpty() ? null : messages.get(messages.size() - 1);
+    }
+    
+    public String getLastMessageText() {
+        ChatMessage lastMessage = getLastMessage();
+        if (lastMessage == null) {
+            return "";
         }
+        
+        if (lastMessage instanceof UserMessage) {
+            return ((UserMessage) lastMessage).singleText();
+        } else if (lastMessage instanceof AiMessage) {
+            return ((AiMessage) lastMessage).text();
+        } else if (lastMessage instanceof SystemMessage) {
+            return ((SystemMessage) lastMessage).text();
+        } else if (lastMessage instanceof ToolExecutionResultMessage) {
+            return ((ToolExecutionResultMessage) lastMessage).text();
+        }
+        return "";
     }
     
-    // Log agent actions with structured format
     public void logAgentAction(String agentName, String action, String details) {
         String entry = String.format("[%s] %s: %s", agentName, action, details);
-        addToConversationHistory(entry);
+        addAiMessage(entry);
     }
     
-    // Log tool calls and results
     public void logToolCall(String agentName, String toolName, String parameters, String result) {
         String entry = String.format("[%s] Tool %s(%s) -> %s", agentName, toolName, parameters, result);
-        addToConversationHistory(entry);
+        addAiMessage(entry);
     }
     
-    // Current query being processed
-    public String getCurrentQuery() {
-        return currentQuery;
-    }
-    
-    public void setCurrentQuery(String query) {
-        this.currentQuery = query;
-    }
-    
-    // Routing information
-    public String getNextAgent() {
-        return nextAgent;
-    }
-    
-    public void setNextAgent(String nextAgent) {
-        this.nextAgent = nextAgent;
-    }
-    
-    public String getRoutingReason() {
-        return routingReason;
-    }
-    
-    public void setRoutingReason(String reason) {
-        this.routingReason = reason;
-    }
-    
-    // Extract information from conversation history
-    public List<String> getRecentVehiclesMentioned() {
-        List<String> vehicles = new ArrayList<>();
-        for (String entry : conversationHistory) {
-            // Look for vehicle search tool calls
-            if (entry.contains("Tool searchVehicles") || entry.contains("Tool searchVehiclesByMake")) {
-                vehicles.add(entry);
-            }
+    public String getConversationContext() {
+        if (messages.isEmpty()) {
+            return "";
         }
-        return vehicles;
+        
+        StringBuilder context = new StringBuilder();
+        for (ChatMessage message : messages) {
+            String prefix = "";
+            if (message instanceof UserMessage) {
+                prefix = "User: ";
+            } else if (message instanceof AiMessage) {
+                prefix = "Assistant: ";
+            } else if (message instanceof SystemMessage) {
+                prefix = "System: ";
+            } else if (message instanceof ToolExecutionResultMessage) {
+                prefix = "Tool Result: ";
+            }
+            String text = "";
+            if (message instanceof UserMessage) {
+                text = ((UserMessage) message).singleText();
+            } else if (message instanceof AiMessage) {
+                text = ((AiMessage) message).text();
+            } else if (message instanceof SystemMessage) {
+                text = ((SystemMessage) message).text();
+            } else if (message instanceof ToolExecutionResultMessage) {
+                text = ((ToolExecutionResultMessage) message).text();
+            }
+            context.append(prefix).append(text).append("\n");
+        }
+        return context.toString().trim();
     }
     
-    public String getLastAgentResponse() {
-        for (int i = conversationHistory.size() - 1; i >= 0; i--) {
-            String entry = conversationHistory.get(i);
-            // Look for agent responses (not tool calls or routing)
-            if ((entry.contains("Expert:") || entry.contains("Advisor:") || 
-                 entry.contains("Coordinator:") || entry.contains("Coach:") || 
-                 entry.contains("Profiler:") || entry.contains("Specialist:")) 
-                && !entry.startsWith("[")) {
-                return entry;
-            }
-        }
-        return null;
+    public List<ChatMessage> getMessagesOfType(Class<? extends ChatMessage> messageType) {
+        return messages.stream()
+                .filter(messageType::isInstance)
+                .toList();
     }
     
-    public boolean hasRecentFinancingDiscussion() {
-        // Check last 5 entries for financing-related content
-        int start = Math.max(0, conversationHistory.size() - 5);
-        for (int i = start; i < conversationHistory.size(); i++) {
-            String entry = conversationHistory.get(i).toLowerCase();
-            if (entry.contains("lease") || entry.contains("finance") || entry.contains("loan") || entry.contains("payment")) {
-                return true;
-            }
-        }
-        return false;
+    public List<UserMessage> getUserMessages() {
+        return messages.stream()
+                .filter(UserMessage.class::isInstance)
+                .map(UserMessage.class::cast)
+                .toList();
+    }
+    
+    public List<AiMessage> getAiMessages() {
+        return messages.stream()
+                .filter(AiMessage.class::isInstance)
+                .map(AiMessage.class::cast)
+                .toList();
     }
 }

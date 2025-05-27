@@ -10,11 +10,12 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
- * Negotiation Coach Agent - Helps with pricing strategy and incentives
+ * Negotiation Coach Agent - Helps with pricing strategy and trade-ins
  */
-public class NegotiationCoachAgent implements AgentNode {
+public class NegotiationCoachAgent {
     
     static class NegotiationTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
@@ -24,54 +25,61 @@ public class NegotiationCoachAgent implements AgentNode {
             this.state = state;
         }
         
-        @Tool("Calculate trade-in value")
+        @Tool("Calculate trade-in value for current vehicle")
         public TradeInValue calculateTradeIn(
-                @P("Make (Chevrolet, GMC, etc)") String make,
-                @P("Model") String model,
+                @P("Vehicle make") String make,
+                @P("Vehicle model") String model,
                 @P("Year") int year,
                 @P("Mileage") int mileage,
                 @P("Condition (excellent, good, fair, poor)") String condition) {
-            VehicleMake vehicleMake = VehicleMake.fromString(make);
-            if (vehicleMake == null) vehicleMake = VehicleMake.CHEVROLET;
-            VehicleTradeIn tradeIn = new VehicleTradeIn(vehicleMake, model, year, mileage, condition, List.of());
-            TradeInValue value = tools.calculateTradeInValue(tradeIn);
-            if (state != null && value != null) {
-                state.logToolCall("NEGOTIATION_COACH", "calculateTradeIn", 
-                    String.format("make=%s, model=%s, year=%d, mileage=%d, condition=%s", make, model, year, mileage, condition),
-                    "Trade-in value for " + year + " " + make + " " + model + ": $" + value.fairValue());
+            logToolCall("calculateTradeIn", "make", make, "model", model, "year", year, 
+                       "mileage", mileage, "condition", condition);
+            VehicleTradeIn vehicleTradeIn = new VehicleTradeIn(
+                VehicleMake.fromString(make), model, year, mileage, condition, List.of());
+            TradeInValue tradeIn = tools.calculateTradeInValue(vehicleTradeIn);
+            if (state != null && tradeIn != null) {
+                state.logToolCall("NEGOTIATION_COACH", "calculateTradeIn",
+                    String.format("%d %s %s, %d miles, %s", year, make, model, mileage, condition),
+                    String.format("Trade-in value: $%,.0f", tradeIn.dealerValue()));
             }
-            return value;
+            return tradeIn;
         }
         
         @Tool("Suggest negotiation strategy")
         public NegotiationStrategy suggestStrategy(
                 @P("Vehicle ID") String vehicleId,
-                @P("Inventory level (high, medium, low)") String inventoryLevel,
-                @P("Is end of month?") boolean endOfMonth,
-                @P("Is end of year?") boolean endOfYear,
-                @P("Season (spring, summer, fall, winter)") String season) {
+                @P("Market conditions (buyers_market, sellers_market, balanced)") String marketConditions,
+                @P("Time of year") String timeOfYear,
+                @P("Urgency (high, medium, low)") String urgency) {
+            logToolCall("suggestStrategy", "vehicleId", vehicleId, "market", marketConditions, 
+                       "timeOfYear", timeOfYear, "urgency", urgency);
             MarketConditions conditions = new MarketConditions(
-                inventoryLevel, "medium", endOfMonth, endOfYear, season
+                marketConditions.contains("buyers") ? "high" : "low",
+                marketConditions.contains("sellers") ? "high" : "low",
+                timeOfYear.toLowerCase().contains("end") && timeOfYear.toLowerCase().contains("month"),
+                timeOfYear.toLowerCase().contains("end") && timeOfYear.toLowerCase().contains("year"),
+                timeOfYear
             );
             NegotiationStrategy strategy = tools.suggestNegotiationStrategy(vehicleId, conditions);
             if (state != null && strategy != null) {
-                state.logToolCall("NEGOTIATION_COACH", "suggestStrategy", 
-                    String.format("vehicleId=%s, inventoryLevel=%s, endOfMonth=%b", vehicleId, inventoryLevel, endOfMonth),
-                    "Negotiation strategy for " + vehicleId + ": " + strategy.bestTimeToNegotiate());
+                state.logToolCall("NEGOTIATION_COACH", "suggestStrategy",
+                    String.format("vehicleId=%s, market=%s", vehicleId, marketConditions),
+                    "Strategy: Target $" + String.format("%.0f", strategy.targetPrice()));
             }
             return strategy;
         }
         
-        @Tool("Find available incentives and rebates")
+        @Tool("Find current incentives and rebates")
         public List<Incentive> findIncentives(
                 @P("Vehicle ID") String vehicleId,
-                @P("ZIP code") String zipCode) {
+                @P("ZIP code") String zipCode,
+                @P("Customer type (general, military, student, first_responder)") String customerType) {
+            logToolCall("findIncentives", "vehicleId", vehicleId, "zipCode", zipCode, "customerType", customerType);
             List<Incentive> incentives = tools.findIncentivesAndRebates(vehicleId, zipCode);
-            if (state != null && !incentives.isEmpty()) {
-                double totalSavings = incentives.stream().mapToDouble(Incentive::amount).sum();
-                state.logToolCall("NEGOTIATION_COACH", "findIncentives", 
-                    String.format("vehicleId=%s, zipCode=%s", vehicleId, zipCode),
-                    "Found " + incentives.size() + " incentives for " + vehicleId + " totaling $" + totalSavings);
+            if (state != null) {
+                state.logToolCall("NEGOTIATION_COACH", "findIncentives",
+                    String.format("vehicleId=%s, zipCode=%s, type=%s", vehicleId, zipCode, customerType),
+                    String.format("Found %d incentives", incentives.size()));
             }
             return incentives;
         }
@@ -80,28 +88,22 @@ public class NegotiationCoachAgent implements AgentNode {
     interface NegotiationAssistant {
         @SystemMessage("""
             You are a negotiation coach helping customers get the best deal on GM vehicles.
-            You provide strategic advice on pricing and timing.
+            Your expertise includes:
+            - Trade-in value assessment
+            - Market timing and seasonal trends
+            - Negotiation tactics and strategies
+            - Understanding of dealer incentives and rebates
+            - Price comparison and fair market value
             
-            IMPORTANT: Extract relevant information from the conversation history.
-            Look for mentions of:
-            - Trade-in vehicles
-            - Budget constraints
-            - Timing preferences
-            - Previous negotiation experiences
-            
-            You can:
-            - Calculate trade-in values
-            - Suggest negotiation strategies
-            - Find available incentives and rebates
-            - Advise on best times to buy
-            - Explain dealer margins and pricing
-            - Provide tips for negotiating
-            
-            Use the tools to provide data-driven advice.
-            Be honest and transparent about pricing.
-            Help customers feel confident in negotiations.
+            Always:
+            - Empower customers with knowledge
+            - Suggest realistic negotiation targets
+            - Explain the rationale behind strategies
+            - Consider the customer's specific situation
+            - Be honest about market conditions
+            - Help customers understand total deal value (not just monthly payments)
             """)
-        String provideNegotiationAdvice(@UserMessage String conversation);
+        String provideNegotiationCoaching(@UserMessage String conversation);
     }
     
     private final NegotiationAssistant assistant;
@@ -115,23 +117,19 @@ public class NegotiationCoachAgent implements AgentNode {
                 .build();
     }
     
-    @Override
-    public CustomerState process(CustomerState state) {
+    public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
         
-        String query = state.getCurrentQuery();
-        String conversation = String.join("\n", state.getConversationHistory());
-        conversation += "\nUser: " + query;
+        // Include conversation history
+        String conversation = state.getConversationContext();
         
-        String response = assistant.provideNegotiationAdvice(conversation);
-        state.addToConversationHistory("Negotiation Coach: " + response);
+        // Let the LLM process the request with tools
+        String response = assistant.provideNegotiationCoaching(conversation);
         
-        return state;
-    }
-    
-    @Override
-    public String getName() {
-        return "NEGOTIATION_COACH";
+        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        state.addAiMessage(response);
+        
+        return response;
     }
 }
