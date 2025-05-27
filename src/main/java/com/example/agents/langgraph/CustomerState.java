@@ -89,8 +89,10 @@ public class CustomerState {
 
 
     public void printMessages() {
+/*
         System.out.println("\n=== Conversation History ===");
         System.out.println(getConversationContext());
         System.out.println();
+*/
     }
 }
