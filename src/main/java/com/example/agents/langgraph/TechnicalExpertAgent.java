@@ -58,7 +58,7 @@ public class TechnicalExpertAgent implements AgentNode {
         
         @Tool("Search vehicles by make/brand")
         public List<VehicleInfo> searchVehiclesByMake(
-                @P("Make like Chevrolet, GMC, Cadillac") String make,
+                @P("Make like Chevrolet, GMC, Cadillac, Buick") String make,
                 @P("Exclude EVs") boolean excludeEVs) {
             logToolCall("searchVehiclesByMake", "make", make != null ? make : "null", "excludeEVs", excludeEVs);
             if (make == null) {
@@ -95,7 +95,7 @@ public class TechnicalExpertAgent implements AgentNode {
         
         @Tool("Search vehicle by make and model")
         public VehicleInfo searchByMakeModel(
-                @P("Make (Chevrolet, GMC, Cadillac)") String make,
+                @P("Make (Chevrolet, GMC, Cadillac, Buick)") String make,
                 @P("Model name") String model) {
             logToolCall("searchByMakeModel", "make", make, "model", model);
             return tools.getVehicleByMakeAndModel(make, model);
@@ -167,8 +167,8 @@ public class TechnicalExpertAgent implements AgentNode {
             - Calculate total cost of ownership
             
             Use the tools to get accurate information.
-            If no profile exists, default to showing a variety of popular options.
-            Be helpful and informative without being pushy about profiling.
+            If no preferences exist, default to showing a variety of popular options, but ask first.
+            Be helpful and informative.
             """)
         String provideTechnicalInfo(@UserMessage String conversation);
     }

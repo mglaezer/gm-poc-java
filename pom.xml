@@ -68,8 +68,15 @@
 
         <!-- Google ADK -->
         <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-adk</artifactId>
+            <groupId>com.google.adk</groupId>
+            <artifactId>google-adk</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+        
+        <!-- Google ADK Dev (for Web UI) -->
+        <dependency>
+            <groupId>com.google.adk</groupId>
+            <artifactId>google-adk-dev</artifactId>
             <version>0.1.0</version>
         </dependency>
 

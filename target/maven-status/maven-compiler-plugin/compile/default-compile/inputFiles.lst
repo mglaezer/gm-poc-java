@@ -3,7 +3,9 @@
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/CommonRequirements.java
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/MockVehicleData.java
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/ToolsImpl.java
-/Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/adk/package-info.java
+/Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/adk/GMVehicleADKAgent.java
+/Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/adk/GMVehicleADKWebDemo.java
+/Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/adk/GMVehicleMultiAgentSystem.java
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/langchain/GMVehicleAgent.java
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/langchain/GMVehicleAgentDemo.java
 /Users/maxim/code/gm-poc-java/src/main/java/com/example/agents/langchain/VehicleSearchTools.java

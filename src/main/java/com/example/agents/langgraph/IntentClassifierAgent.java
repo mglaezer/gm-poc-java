@@ -15,34 +15,27 @@ public class IntentClassifierAgent implements AgentNode {
     interface IntentClassifier {
         @SystemMessage("""
             You are an intent classifier for a GM vehicle selection system.
-            Analyze the user's query AND the entire conversation history to determine which expert agent should handle it.
+            Analyze the user's last message AND the entire conversation history to determine which expert agent should handle it.
             The conversation history contains all context about the user's preferences, budget, and needs.
+            Make sure you give more preference to the last message and the end of the conversation rather than the beginning.
             
-            CRITICAL ROUTING RULES:
-            
-            PRIORITY ORDER (check in this order):
             1. Route to FINANCIAL_ADVISOR when:
-               - User mentions "lease", "finance", "buy", "purchase", "loan", "payment", "monthly"
-               - User asks about costs, budgeting, insurance, or affordability
-               - Even if they mention a specific vehicle, if the intent is financial, route here
+               - User mentions is interested in financing, leasing, or buying options.
             
             2. Route to NEGOTIATION_COACH when:
-               - User mentions "trade-in", "negotiate", "deal", "incentive", "rebate"
+               - User mentions "trade-in", "negotiate", "deal", "incentive", "rebate" or similar
                - User asks about best time to buy or pricing strategies
             
             3. Route to EV_SPECIALIST when:
-               - User specifically asks about electric vehicles, charging, or range
-               - User wants to compare EV vs gas vehicles
+               - User specifically asks about particular electric vehicles, charging, or range
             
             4. Route to AVAILABILITY_COORDINATOR when:
                - User wants to check inventory, availability, or dealer stock
                - User wants to schedule a test drive
             
             5. Route to CUSTOMER_PROFILER ONLY when:
-               - User explicitly asks for help choosing: "help me decide", "I don't know what I want"
-               - User seems overwhelmed after seeing many options
-               - NEVER route here just to ask questions
-               - NEVER route to this agent if the user expressed what they want
+               - User explicitly asks for help choosing or seems overwhelmed with technical choices.
+               - NEVER route to this agent if the user expressed what they want and insists on answers.
             
             6. Route to TECHNICAL_EXPERT when:
                - User asks to see/show/display vehicles
@@ -87,30 +80,6 @@ public class IntentClassifierAgent implements AgentNode {
             AGENT: [agent name]
             REASON: [brief explanation why this agent was chosen, max 15 words]
             
-            Examples:
-            Query: "Let's lease blazer ev"
-            AGENT: FINANCIAL_ADVISOR
-            REASON: User wants to lease a specific vehicle
-            
-            Query: "What's my trade-in worth?"
-            AGENT: NEGOTIATION_COACH
-            REASON: User asking about trade-in value
-            
-            Query: "How much does it cost to charge a bolt ev?"
-            AGENT: EV_SPECIALIST
-            REASON: User asking about EV charging costs
-            
-            Query: "Can I test drive a silverado this weekend?"
-            AGENT: AVAILABILITY_COORDINATOR
-            REASON: User wants to schedule a test drive
-            
-            Query: "Show me SUVs"
-            AGENT: TECHNICAL_EXPERT
-            REASON: User wants to see vehicle options
-            
-            Query: "too many options, help me choose"
-            AGENT: CUSTOMER_PROFILER
-            REASON: User overwhelmed with options, needs narrowing help
             """)
         String classifyIntent(@UserMessage String context);
     }
