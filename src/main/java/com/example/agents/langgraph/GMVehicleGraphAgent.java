@@ -83,6 +83,8 @@ public class GMVehicleGraphAgent {
                 response = technicalExpert.execute(state, userQuery);
                 break;
         }
+
+        state.printMessages();
         
         return response;
     }
