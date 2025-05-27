@@ -14,21 +14,7 @@ public class GMVehicleGraphDemo {
         System.out.println("=== GM Vehicle Selection Graph Agent Demo ===");
         System.out.println("Using multi-agent system with specialized experts\n");
         
-        ChatModel model;
-        String apiKey = System.getenv("OPENAI_API_KEY");
-        
-        if (apiKey == null || apiKey.isEmpty()) {
-            System.err.println("Error: OPENAI_API_KEY environment variable not set");
-            System.err.println("Please set your OpenAI API key:");
-            System.err.println("  export OPENAI_API_KEY=your-api-key");
-            return;
-        }
-        
-        model = OpenAiChatModel.builder()
-                .apiKey(apiKey)
-                .modelName("gpt-4.1")
-                .temperature(0.7)
-                .build();
+        ChatModel model = ModelProvider.getDefaultModel();
         
         GMVehicleGraphAgent agent = new GMVehicleGraphAgent(model);
         CustomerState state = agent.createNewState();

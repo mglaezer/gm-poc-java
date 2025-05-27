@@ -20,11 +20,7 @@ public class GMVehicleGraphAgent {
     private final EVSpecialistAgent evSpecialist;
     
     public GMVehicleGraphAgent() {
-        this(OpenAiChatModel.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .modelName("gpt-4.1")
-                .temperature(0.7)
-                .build());
+        this(ModelProvider.getDefaultModel());
     }
     
     public GMVehicleGraphAgent(ChatModel model) {
