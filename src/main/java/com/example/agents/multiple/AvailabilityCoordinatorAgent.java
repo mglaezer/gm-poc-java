@@ -19,11 +19,6 @@ public class AvailabilityCoordinatorAgent {
     static class AvailabilityTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Check vehicle availability at dealers")
         public VehicleAvailability checkAvailability(
@@ -55,7 +50,6 @@ public class AvailabilityCoordinatorAgent {
                     sb.append(String.format("Estimated Delivery: %s\n", availability.estimatedDelivery()));
                 }
             }
-            state.addToolResult("checkAvailability", sb.toString());
             return availability;
         }
 
@@ -104,7 +98,6 @@ public class AvailabilityCoordinatorAgent {
                 sb.append(String.format("Date/Time: %s\n", appointment.appointmentTime()));
                 sb.append(String.format("Customer: %s (%s)", appointment.customerName(), appointment.customerPhone()));
             }
-            state.addToolResult("scheduleTestDrive", sb.toString());
 
             return appointment;
         }
@@ -133,27 +126,17 @@ public class AvailabilityCoordinatorAgent {
     private final AvailabilityAssistant assistant;
     private final AvailabilityTools tools;
 
-    public AvailabilityCoordinatorAgent(ChatModel model) {
+    public AvailabilityCoordinatorAgent(ChatModel model, ConversationState conversationState) {
         this.tools = new AvailabilityTools();
         this.assistant = AiServices.builder(AvailabilityAssistant.class)
                 .chatModel(model)
                 .tools(tools)
+                .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
-    public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
-        tools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.assistWithAvailability(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
-        state.addAiMessage(response);
-
+    public String execute(String query) {
+        String response = assistant.assistWithAvailability(query);
         return response;
     }
 }

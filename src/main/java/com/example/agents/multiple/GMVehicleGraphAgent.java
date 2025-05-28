@@ -14,36 +14,33 @@ public class GMVehicleGraphAgent {
     private final AvailabilityCoordinatorAgent availabilityCoordinator;
     private final NegotiationCoachAgent negotiationCoach;
     private final EVSpecialistAgent evSpecialist;
+    private final ConversationState conversationState;
 
     public GMVehicleGraphAgent() {
         this(ModelProvider.getDefaultModel());
     }
 
     public GMVehicleGraphAgent(ChatModel model) {
-        // Initialize all agents
-        this.router = new IntentClassifierAgent(model);
-        this.customerProfiler = new CustomerProfilerAgent(model);
-        this.technicalExpert = new TechnicalExpertAgent(model);
-        this.financialAdvisor = new FinancialAdvisorAgent(model);
-        this.availabilityCoordinator = new AvailabilityCoordinatorAgent(model);
-        this.negotiationCoach = new NegotiationCoachAgent(model);
-        this.evSpecialist = new EVSpecialistAgent(model);
+        // Create shared conversation state
+        this.conversationState = new ConversationState();
+
+        // Initialize all agents - only router and technicalExpert use ConversationState for now
+        this.router = new IntentClassifierAgent(model, conversationState);
+        this.customerProfiler = new CustomerProfilerAgent(model, conversationState);
+        this.technicalExpert = new TechnicalExpertAgent(model, conversationState);
+        this.financialAdvisor = new FinancialAdvisorAgent(model, conversationState);
+        this.availabilityCoordinator = new AvailabilityCoordinatorAgent(model, conversationState);
+        this.negotiationCoach = new NegotiationCoachAgent(model, conversationState);
+        this.evSpecialist = new EVSpecialistAgent(model, conversationState);
     }
 
     /**
      * Process a user query through the graph
      */
-    public String processQuery(String userQuery, CustomerState state) {
-        if (state == null) {
-            state = new CustomerState();
-        }
-
-        // Add user query to messages
-        state.addUserMessage(userQuery);
-
+    public String processQuery(String userQuery) {
         // Route through intent classifier
         System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
-        IntentClassifierAgent.IntentClassification classification = router.classifyIntentWithReason(state);
+        IntentClassifierAgent.IntentClassification classification = router.classifyIntentWithReason(userQuery);
         String nextAgentName = classification.agent();
         String reason = classification.reasonForChoosing();
 
@@ -52,43 +49,41 @@ public class GMVehicleGraphAgent {
         switch (nextAgentName) {
             case "CUSTOMER_PROFILER":
                 System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
-                response = customerProfiler.execute(state, userQuery);
+                response = customerProfiler.execute(userQuery);
                 break;
             case "TECHNICAL_EXPERT":
                 System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
-                response = technicalExpert.execute(state, userQuery);
+                response = technicalExpert.execute(userQuery);
                 break;
             case "FINANCIAL_ADVISOR":
                 System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
-                response = financialAdvisor.execute(state, userQuery);
+                response = financialAdvisor.execute(userQuery);
                 break;
             case "AVAILABILITY_COORDINATOR":
                 System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
-                response = availabilityCoordinator.execute(state, userQuery);
+                response = availabilityCoordinator.execute(userQuery);
                 break;
             case "NEGOTIATION_COACH":
                 System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
-                response = negotiationCoach.execute(state, userQuery);
+                response = negotiationCoach.execute(userQuery);
                 break;
             case "EV_SPECIALIST":
                 System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
-                response = evSpecialist.execute(state, userQuery);
+                response = evSpecialist.execute(userQuery);
                 break;
             default:
                 System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
-                response = technicalExpert.execute(state, userQuery);
+                response = technicalExpert.execute(userQuery);
                 break;
         }
-
-        state.printMessages();
 
         return response;
     }
 
     /**
-     * Create a new customer state
+     * Get the conversation state
      */
-    public CustomerState createNewState() {
-        return new CustomerState();
+    public ConversationState getConversationState() {
+        return conversationState;
     }
 }

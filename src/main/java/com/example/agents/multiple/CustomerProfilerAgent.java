@@ -21,11 +21,6 @@ public class CustomerProfilerAgent {
     static class ProfilerTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Analyze customer needs based on family size, usage, and preferences")
         public CustomerProfile analyzeNeeds(
@@ -55,7 +50,6 @@ public class CustomerProfilerAgent {
             sb.append(String.format(
                     "Needs Towing: %s | Needs Off-Road: %s",
                     profile.needsTowing() ? "Yes" : "No", profile.needsOffRoad() ? "Yes" : "No"));
-            state.addToolResult("analyzeNeeds", sb.toString());
             return profile;
         }
 
@@ -136,7 +130,6 @@ public class CustomerProfilerAgent {
                     .append(String.join(", ", profile.preferences()))
                     .append("\n");
             sb.append("Must-Have Features: ").append(String.join(", ", mustHaveFeatures));
-            state.addToolResult("buildProfile", sb.toString());
 
             return profile;
         }
@@ -157,7 +150,6 @@ public class CustomerProfilerAgent {
                     .append(profile.primaryUsage())
                     .append("\n");
             sb.append("Suggested Vehicle Categories: ").append(String.join(", ", categories));
-            state.addToolResult("suggestCategories", sb.toString());
 
             return categories;
         }
@@ -198,7 +190,6 @@ public class CustomerProfilerAgent {
                             "- %s %s %s - $%,.0f\n", v.make().getDisplayName(), v.model(), v.trim(), v.price()));
                 }
             }
-            state.addToolResult("filterVehicles", sb.toString());
 
             return filtered;
         }
@@ -233,7 +224,6 @@ public class CustomerProfilerAgent {
                     "Vehicle Categories: %s\n",
                     categories.stream().map(VehicleCategory::getDisplayName).collect(Collectors.joining(", "))));
             sb.append(String.format("Assumed Family Size: %d", familySize));
-            state.addToolResult("createQuickProfile", sb.toString());
 
             return profile;
         }
@@ -271,27 +261,16 @@ public class CustomerProfilerAgent {
     private final ProfilerAssistant assistant;
     private final ProfilerTools tools;
 
-    public CustomerProfilerAgent(ChatModel model) {
+    public CustomerProfilerAgent(ChatModel model, ConversationState conversationState) {
         this.tools = new ProfilerTools();
         this.assistant = AiServices.builder(ProfilerAssistant.class)
                 .chatModel(model)
                 .tools(tools)
+                .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
-    public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
-        tools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.assistCustomer(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
-        state.addAiMessage(response);
-
-        return response;
+    public String execute(String query) {
+        return assistant.assistCustomer(query);
     }
 }

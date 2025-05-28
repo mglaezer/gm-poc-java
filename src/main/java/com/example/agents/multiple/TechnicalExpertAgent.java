@@ -4,14 +4,13 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
-import org.llmtoolkit.core.annotations.PP;
 import org.llmtoolkit.core.annotations.PT;
 
 /**
@@ -22,11 +21,6 @@ public class TechnicalExpertAgent {
     static class TechnicalTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Search vehicles by criteria")
         public List<VehicleInfo> searchVehicles(
@@ -76,7 +70,7 @@ public class TechnicalExpertAgent {
                             v.mpgHighway()));
                 }
             }
-            state.addToolResult("searchVehicles", sb.toString());
+            // ChatMemory automatically tracks tool results
             return results;
         }
 
@@ -131,7 +125,7 @@ public class TechnicalExpertAgent {
                 }
             }
 
-            state.addToolResult("searchVehiclesByMake", resultDetails.toString());
+            // ChatMemory automatically tracks tool results
 
             return results;
         }
@@ -174,7 +168,7 @@ public class TechnicalExpertAgent {
                         .append("\n");
                 sb.append("Tech: ").append(String.join(", ", vehicle.infotainmentFeatures()));
             }
-            state.addToolResult("getVehicleDetails", sb.toString());
+            // ChatMemory automatically tracks tool results
             return vehicle;
         }
 
@@ -201,7 +195,7 @@ public class TechnicalExpertAgent {
                             "- %s: %s (Vehicle: %s)\n", point.category(), point.value(), point.vehicleId()));
                 }
             }
-            state.addToolResult("compareVehicles", sb.toString());
+            // ChatMemory automatically tracks tool results
             return comparison;
         }
 
@@ -232,7 +226,7 @@ public class TechnicalExpertAgent {
                     .append(competitorList)
                     .append("\n");
             sb.append(result.toString());
-            state.addToolResult("compareToCompetitors", sb.toString());
+            // ChatMemory automatically tracks tool results
 
             return result.toString();
         }
@@ -266,7 +260,7 @@ public class TechnicalExpertAgent {
                 sb.append(String.format("Total Cost: $%,.0f\n", tco.totalCost()));
                 sb.append(String.format("Cost per Mile: $%.2f", tco.costPerMile()));
             }
-            state.addToolResult("calculateTCO", sb.toString());
+            // ChatMemory automatically tracks tool results
 
             return tco;
         }
@@ -298,7 +292,7 @@ public class TechnicalExpertAgent {
                     + "\n"
                     + "IIHS Top Safety Pick: "
                     + (ratings.topSafetyPick() ? "Yes" : "No");
-            state.addToolResult("checkSafety", sb);
+            // ChatMemory automatically tracks tool results
 
             return ratings;
         }
@@ -306,14 +300,16 @@ public class TechnicalExpertAgent {
 
     interface TechnicalAssistant {
         @PT(templatePath = "technical_expert.jte")
-        String provideTechnicalInfo(@PP("messages") List<ChatMessage> messages);
+        String provideTechnicalInfo();
     }
 
     private final TechnicalAssistant assistant;
     private final TechnicalTools tools;
     private final SharedVehicleSearchTools sharedSearchTools;
+    private final ConversationState conversationState;
 
-    public TechnicalExpertAgent(ChatModel model) {
+    public TechnicalExpertAgent(ChatModel model, ConversationState conversationState) {
+        this.conversationState = conversationState;
         this.tools = new TechnicalTools();
         this.sharedSearchTools = new SharedVehicleSearchTools();
         this.assistant = TemplatedLLMServiceFactory.builder()
@@ -321,16 +317,14 @@ public class TechnicalExpertAgent {
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
                     aiServices.tools(tools, sharedSearchTools);
+                    aiServices.chatMemory(conversationState.getChatMemory());
                 })
                 .build()
                 .create(TechnicalAssistant.class);
     }
 
-    public String execute(CustomerState state, String query) {
-        tools.setState(state);
-        sharedSearchTools.setState(state);
-        String response = assistant.provideTechnicalInfo(state.getMessages());
-        state.addAiMessage(response);
-        return response;
+    public String execute(String query) {
+        conversationState.getChatMemory().add(UserMessage.from(query));
+        return assistant.provideTechnicalInfo();
     }
 }

@@ -18,11 +18,6 @@ public class EVSpecialistAgent {
     static class EVTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Calculate charging costs for an EV")
         public ChargingCost calculateChargingCosts(
@@ -67,7 +62,6 @@ public class EVSpecialistAgent {
                         "Home Charging: $%.2f/kWh | Public: $%.2f/kWh",
                         cost.homeChargingCost(), cost.publicChargingCost()));
             }
-            state.addToolResult("calculateChargingCosts", sb.toString());
             return cost;
         }
 
@@ -102,7 +96,6 @@ public class EVSpecialistAgent {
                             station.chargerType(), station.network(), station.availablePorts(), station.costPerKwh()));
                 }
             }
-            state.addToolResult("findChargingStations", sb.toString());
             return stations;
         }
 
@@ -153,7 +146,6 @@ public class EVSpecialistAgent {
                         .append("\n");
                 sb.append("Can Complete 200mi Trip: ").append(range.canCompleteTrip() ? "Yes" : "No");
             }
-            state.addToolResult("estimateRange", sb.toString());
             return range;
         }
     }
@@ -182,27 +174,17 @@ public class EVSpecialistAgent {
     private final EVAssistant assistant;
     private final EVTools tools;
 
-    public EVSpecialistAgent(ChatModel model) {
+    public EVSpecialistAgent(ChatModel model, ConversationState conversationState) {
         this.tools = new EVTools();
         this.assistant = AiServices.builder(EVAssistant.class)
                 .chatModel(model)
                 .tools(tools)
+                .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
-    public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
-        tools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.provideEVGuidance(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
-        state.addAiMessage(response);
-
+    public String execute(String query) {
+        String response = assistant.provideEVGuidance(query);
         return response;
     }
 }

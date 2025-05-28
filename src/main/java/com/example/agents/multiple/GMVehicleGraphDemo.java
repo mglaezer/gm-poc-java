@@ -15,7 +15,6 @@ public class GMVehicleGraphDemo {
         ChatModel model = ModelProvider.getDefaultModel();
 
         GMVehicleGraphAgent agent = new GMVehicleGraphAgent(model);
-        CustomerState state = agent.createNewState();
 
         // Print initial greeting
         System.out.println(
@@ -34,14 +33,14 @@ public class GMVehicleGraphDemo {
 
             if (userInput.equalsIgnoreCase("history")) {
                 System.out.println("\n=== Conversation History ===");
-                System.out.println(state.getConversationContext());
+                System.out.println("Conversation history is managed by ChatMemory");
                 System.out.println("=========================");
                 continue;
             }
 
             try {
                 // Process query with single agent routing (most queries only need one step)
-                String response = agent.processQuery(userInput, state);
+                String response = agent.processQuery(userInput);
 
                 // Extract just the agent response part
                 String[] parts = response.split(": ", 2);

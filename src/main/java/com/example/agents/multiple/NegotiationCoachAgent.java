@@ -18,11 +18,6 @@ public class NegotiationCoachAgent {
     static class NegotiationTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Calculate trade-in value for current vehicle")
         public TradeInValue calculateTradeIn(
@@ -72,7 +67,6 @@ public class NegotiationCoachAgent {
                     sb.append("Value Factors: ").append(String.join(", ", tradeIn.valueFactors()));
                 }
             }
-            state.addToolResult("calculateTradeIn", sb.toString());
             return tradeIn;
         }
 
@@ -128,7 +122,6 @@ public class NegotiationCoachAgent {
                     sb.append("Leverage: ").append(String.join(", ", strategy.leveragePoints()));
                 }
             }
-            state.addToolResult("suggestStrategy", sb.toString());
             return strategy;
         }
 
@@ -169,7 +162,6 @@ public class NegotiationCoachAgent {
                 }
                 sb.append(String.format("Total Potential Savings: $%,.0f", totalSavings));
             }
-            state.addToolResult("findIncentives", sb.toString());
             return incentives;
         }
     }
@@ -199,27 +191,17 @@ public class NegotiationCoachAgent {
     private final NegotiationAssistant assistant;
     private final NegotiationTools tools;
 
-    public NegotiationCoachAgent(ChatModel model) {
+    public NegotiationCoachAgent(ChatModel model, ConversationState conversationState) {
         this.tools = new NegotiationTools();
         this.assistant = AiServices.builder(NegotiationAssistant.class)
                 .chatModel(model)
                 .tools(tools)
+                .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
-    public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
-        tools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.provideNegotiationCoaching(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
-        state.addAiMessage(response);
-
+    public String execute(String query) {
+        String response = assistant.provideNegotiationCoaching(query);
         return response;
     }
 }

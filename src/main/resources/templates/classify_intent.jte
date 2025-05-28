@@ -1,6 +1,4 @@
-@param java.util.List<dev.langchain4j.data.message.ChatMessage> messages
-
-            You are an intent classifier for a GM vehicle selection system.
+You are an intent classifier for a GM vehicle selection system.
             Analyze the user's last message AND the entire conversation history to determine which expert agent should handle it.
             The conversation history contains all context about the user's preferences, budget, and needs.
             Make sure you give more preference to the last message and the end of the conversation rather than the beginning.
@@ -63,6 +61,3 @@
             Route here for: EV-specific questions, charging costs, charging station locations,
                            range anxiety, electric vs gas comparisons
 
-Messages:
-@template.message_list(messages=messages)
-    

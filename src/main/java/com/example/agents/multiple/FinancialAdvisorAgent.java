@@ -18,11 +18,6 @@ public class FinancialAdvisorAgent {
     static class FinancialTools {
         private final ToolsImpl tools = new ToolsImpl();
         private final ToolLogger logger = new ToolLogger();
-        private CustomerState state;
-
-        public void setState(CustomerState state) {
-            this.state = state;
-        }
 
         @Tool("Calculate financing options for a vehicle")
         public FinancingOption calculateFinancing(
@@ -37,7 +32,9 @@ public class FinancialAdvisorAgent {
                     "downPayment",
                     "$" + downPayment,
                     "termMonths",
-                    termMonths, "creditScore", creditScore);
+                    termMonths,
+                    "creditScore",
+                    creditScore);
             FinancingOption option = tools.calculateFinancing(vehicleId, downPayment, termMonths, creditScore);
 
             StringBuilder sb = new StringBuilder();
@@ -65,7 +62,6 @@ public class FinancialAdvisorAgent {
                 sb.append(String.format("Monthly Payment: $%,.2f\n", option.monthlyPayment()));
                 sb.append(String.format("Total Cost: $%,.0f", option.totalCost()));
             }
-            state.addToolResult("calculateFinancing", sb.toString());
             return option;
         }
 
@@ -91,7 +87,6 @@ public class FinancialAdvisorAgent {
                             opt.termMonths(), opt.monthlyPayment(), opt.interestRate(), opt.downPayment()));
                 }
             }
-            state.addToolResult("compareFinancing", sb.toString());
             return options;
         }
 
@@ -126,7 +121,6 @@ public class FinancialAdvisorAgent {
                     sb.append("Discounts Applied: ").append(String.join(", ", insurance.discountsApplied()));
                 }
             }
-            state.addToolResult("calculateInsurance", sb.toString());
             return insurance;
         }
 
@@ -160,7 +154,6 @@ public class FinancialAdvisorAgent {
                     sb.append("Suggestions: ").append(String.join("; ", budget.suggestions()));
                 }
             }
-            state.addToolResult("suggestBudget", sb.toString());
             return budget;
         }
     }
@@ -176,9 +169,12 @@ public class FinancialAdvisorAgent {
             - Never ask the user for a vehicle ID - look it up yourself using the make and model
             - Once you have the vehicle ID, proceed with the financial calculations
 
+            If the user repeatedly insists on showing financing options without providing all financial details, use some good defaults.
+            If the user wants to compare financing options, use the corresponding tools several times and compare.
+
             Use available tools and never ask for anything more than required by the tools.
             Use tools, do not invent financing or insurance options by yourself.
-            Be friendly, professional, and informative, but also humorous!
+            Be friendly, professional, and informative, but also humorous! Not too wordy.
 
             """)
         String provideFinancialAdvice(@UserMessage String conversation);
@@ -188,29 +184,18 @@ public class FinancialAdvisorAgent {
     private final FinancialTools tools;
     private final SharedVehicleSearchTools sharedSearchTools;
 
-    public FinancialAdvisorAgent(ChatModel model) {
+    public FinancialAdvisorAgent(ChatModel model, ConversationState conversationState) {
         this.tools = new FinancialTools();
         this.sharedSearchTools = new SharedVehicleSearchTools();
         this.assistant = AiServices.builder(FinancialAssistant.class)
                 .chatModel(model)
                 .tools(tools, sharedSearchTools)
+                .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
-    public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
-        tools.setState(state);
-        sharedSearchTools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.provideFinancialAdvice(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
-        state.addAiMessage(response);
-
+    public String execute(String query) {
+        String response = assistant.provideFinancialAdvice(query);
         return response;
     }
 }

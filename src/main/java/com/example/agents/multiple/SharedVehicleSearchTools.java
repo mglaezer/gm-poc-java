@@ -11,11 +11,6 @@ import dev.langchain4j.agent.tool.Tool;
 public class SharedVehicleSearchTools {
     private final ToolsImpl tools = new ToolsImpl();
     private final ToolLogger logger = new ToolLogger();
-    private CustomerState state;
-
-    public void setState(CustomerState state) {
-        this.state = state;
-    }
 
     @Tool("Search vehicle by make and model")
     public VehicleInfo searchByMakeModel(
@@ -47,9 +42,7 @@ public class SharedVehicleSearchTools {
                     vehicle.mpgHighway()));
         }
 
-        if (state != null) {
-            state.addToolResult("searchByMakeModel", sb.toString());
-        }
+        // ChatMemory automatically tracks tool results
 
         return vehicle;
     }
