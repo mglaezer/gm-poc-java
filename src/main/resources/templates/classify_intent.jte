@@ -21,7 +21,8 @@
 
             5. Route to CUSTOMER_PROFILER ONLY when:
                - User explicitly asks for help choosing or seems overwhelmed with technical choices.
-               - NEVER route to this agent if the user expressed what they want and insists on answers.
+               - User is vague about what they want and likely needs help narrowing down choices
+               - NEVER route to this agent if the user expressed what they want and insists on answers
 
             6. Route to TECHNICAL_EXPERT when:
                - User asks to see/show/display vehicles
