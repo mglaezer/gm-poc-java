@@ -8,22 +8,21 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
-
 import java.util.List;
 
 /**
  * Negotiation Coach Agent - Helps with pricing strategy and trade-ins
  */
 public class NegotiationCoachAgent {
-    
+
     static class NegotiationTools extends BaseToolLogger {
         private final ToolsImpl tools = new ToolsImpl();
         private CustomerState state;
-        
+
         public void setState(CustomerState state) {
             this.state = state;
         }
-        
+
         @Tool("Calculate trade-in value for current vehicle")
         public TradeInValue calculateTradeIn(
                 @P("Vehicle make") String make,
@@ -31,17 +30,35 @@ public class NegotiationCoachAgent {
                 @P("Year") int year,
                 @P("Mileage") int mileage,
                 @P("Condition (excellent, good, fair, poor)") String condition) {
-            logToolCall("calculateTradeIn", "make", make, "model", model, "year", year, 
-                       "mileage", mileage, "condition", condition);
-            VehicleTradeIn vehicleTradeIn = new VehicleTradeIn(
-                VehicleMake.fromString(make), model, year, mileage, condition, List.of());
+            logToolCall(
+                    "calculateTradeIn",
+                    "make",
+                    make,
+                    "model",
+                    model,
+                    "year",
+                    year,
+                    "mileage",
+                    mileage,
+                    "condition",
+                    condition);
+            VehicleTradeIn vehicleTradeIn =
+                    new VehicleTradeIn(VehicleMake.fromString(make), model, year, mileage, condition, List.of());
             TradeInValue tradeIn = tools.calculateTradeInValue(vehicleTradeIn);
-            
+
             StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicle=").append(year).append(" ").append(make).append(" ").append(model)
-              .append(", mileage=").append(String.format("%,d", mileage))
-              .append(", condition=").append(condition).append("\n");
-            
+            sb.append("Parameters: vehicle=")
+                    .append(year)
+                    .append(" ")
+                    .append(make)
+                    .append(" ")
+                    .append(model)
+                    .append(", mileage=")
+                    .append(String.format("%,d", mileage))
+                    .append(", condition=")
+                    .append(condition)
+                    .append("\n");
+
             if (tradeIn == null) {
                 sb.append("Unable to calculate trade-in value");
             } else {
@@ -57,30 +74,44 @@ public class NegotiationCoachAgent {
             state.addToolResult("calculateTradeIn", sb.toString());
             return tradeIn;
         }
-        
+
         @Tool("Suggest negotiation strategy")
         public NegotiationStrategy suggestStrategy(
                 @P("Vehicle ID") String vehicleId,
                 @P("Market conditions (buyers_market, sellers_market, balanced)") String marketConditions,
                 @P("Time of year") String timeOfYear,
                 @P("Urgency (high, medium, low)") String urgency) {
-            logToolCall("suggestStrategy", "vehicleId", vehicleId, "market", marketConditions, 
-                       "timeOfYear", timeOfYear, "urgency", urgency);
+            logToolCall(
+                    "suggestStrategy",
+                    "vehicleId",
+                    vehicleId,
+                    "market",
+                    marketConditions,
+                    "timeOfYear",
+                    timeOfYear,
+                    "urgency",
+                    urgency);
             MarketConditions conditions = new MarketConditions(
-                marketConditions.contains("buyers") ? "high" : "low",
-                marketConditions.contains("sellers") ? "high" : "low",
-                timeOfYear.toLowerCase().contains("end") && timeOfYear.toLowerCase().contains("month"),
-                timeOfYear.toLowerCase().contains("end") && timeOfYear.toLowerCase().contains("year"),
-                timeOfYear
-            );
+                    marketConditions.contains("buyers") ? "high" : "low",
+                    marketConditions.contains("sellers") ? "high" : "low",
+                    timeOfYear.toLowerCase().contains("end")
+                            && timeOfYear.toLowerCase().contains("month"),
+                    timeOfYear.toLowerCase().contains("end")
+                            && timeOfYear.toLowerCase().contains("year"),
+                    timeOfYear);
             NegotiationStrategy strategy = tools.suggestNegotiationStrategy(vehicleId, conditions);
-            
+
             StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicleId=").append(vehicleId)
-              .append(", market=").append(marketConditions)
-              .append(", timing=").append(timeOfYear)
-              .append(", urgency=").append(urgency).append("\n");
-            
+            sb.append("Parameters: vehicleId=")
+                    .append(vehicleId)
+                    .append(", market=")
+                    .append(marketConditions)
+                    .append(", timing=")
+                    .append(timeOfYear)
+                    .append(", urgency=")
+                    .append(urgency)
+                    .append("\n");
+
             if (strategy == null) {
                 sb.append("Unable to generate negotiation strategy - vehicle not found");
             } else {
@@ -99,7 +130,7 @@ public class NegotiationCoachAgent {
             state.addToolResult("suggestStrategy", sb.toString());
             return strategy;
         }
-        
+
         @Tool("Find current incentives and rebates")
         public List<Incentive> findIncentives(
                 @P("Vehicle ID") String vehicleId,
@@ -107,25 +138,30 @@ public class NegotiationCoachAgent {
                 @P("Customer type (general, military, student, first_responder)") String customerType) {
             logToolCall("findIncentives", "vehicleId", vehicleId, "zipCode", zipCode, "customerType", customerType);
             List<Incentive> incentives = tools.findIncentivesAndRebates(vehicleId, zipCode);
-            
+
             StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicleId=").append(vehicleId)
-              .append(", zipCode=").append(zipCode)
-              .append(", customerType=").append(customerType).append("\n");
-            
+            sb.append("Parameters: vehicleId=")
+                    .append(vehicleId)
+                    .append(", zipCode=")
+                    .append(zipCode)
+                    .append(", customerType=")
+                    .append(customerType)
+                    .append("\n");
+
             if (incentives.isEmpty()) {
                 sb.append("No current incentives found for this vehicle");
             } else {
                 sb.append("Available Incentives (").append(incentives.size()).append(" found):\n");
                 double totalSavings = 0;
                 for (Incentive inc : incentives) {
-                    sb.append(String.format("- %s: $%,.0f - %s\n", 
-                        inc.type(), inc.amount(), inc.description()));
+                    sb.append(String.format("- %s: $%,.0f - %s\n", inc.type(), inc.amount(), inc.description()));
                     if (inc.expirationDate() != null) {
                         sb.append(String.format("  Expires: %s\n", inc.expirationDate()));
                     }
                     if (!inc.eligibilityRequirements().isEmpty()) {
-                        sb.append("  Requirements: ").append(String.join(", ", inc.eligibilityRequirements())).append("\n");
+                        sb.append("  Requirements: ")
+                                .append(String.join(", ", inc.eligibilityRequirements()))
+                                .append("\n");
                     }
                     totalSavings += inc.amount();
                 }
@@ -135,9 +171,10 @@ public class NegotiationCoachAgent {
             return incentives;
         }
     }
-    
+
     interface NegotiationAssistant {
-        @SystemMessage("""
+        @SystemMessage(
+                """
             You are a negotiation coach helping customers get the best deal on GM vehicles.
             Your expertise includes:
             - Trade-in value assessment
@@ -145,7 +182,7 @@ public class NegotiationCoachAgent {
             - Negotiation tactics and strategies
             - Understanding of dealer incentives and rebates
             - Price comparison and fair market value
-            
+
             Always:
             - Empower customers with knowledge
             - Suggest realistic negotiation targets
@@ -156,10 +193,10 @@ public class NegotiationCoachAgent {
             """)
         String provideNegotiationCoaching(@UserMessage String conversation);
     }
-    
+
     private final NegotiationAssistant assistant;
     private final NegotiationTools tools;
-    
+
     public NegotiationCoachAgent(ChatModel model) {
         this.tools = new NegotiationTools();
         this.assistant = AiServices.builder(NegotiationAssistant.class)
@@ -167,20 +204,20 @@ public class NegotiationCoachAgent {
                 .tools(tools)
                 .build();
     }
-    
+
     public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
-        
+
         // Include conversation history
         String conversation = state.getConversationContext();
-        
+
         // Let the LLM process the request with tools
         String response = assistant.provideNegotiationCoaching(conversation);
-        
+
         // Log the agent response (user message already added by GMVehicleGraphAgent)
         state.addAiMessage(response);
-        
+
         return response;
     }
 }

@@ -6,7 +6,7 @@ import dev.langchain4j.model.chat.ChatModel;
  * Main GM Vehicle Graph Agent that orchestrates multiple specialized agents
  */
 public class GMVehicleGraphAgent {
-    
+
     private final IntentClassifierAgent router;
     private final CustomerProfilerAgent customerProfiler;
     private final TechnicalExpertAgent technicalExpert;
@@ -14,11 +14,11 @@ public class GMVehicleGraphAgent {
     private final AvailabilityCoordinatorAgent availabilityCoordinator;
     private final NegotiationCoachAgent negotiationCoach;
     private final EVSpecialistAgent evSpecialist;
-    
+
     public GMVehicleGraphAgent() {
         this(ModelProvider.getDefaultModel());
     }
-    
+
     public GMVehicleGraphAgent(ChatModel model) {
         // Initialize all agents
         this.router = new IntentClassifierAgent(model);
@@ -29,7 +29,7 @@ public class GMVehicleGraphAgent {
         this.negotiationCoach = new NegotiationCoachAgent(model);
         this.evSpecialist = new EVSpecialistAgent(model);
     }
-    
+
     /**
      * Process a user query through the graph
      */
@@ -37,16 +37,16 @@ public class GMVehicleGraphAgent {
         if (state == null) {
             state = new CustomerState();
         }
-        
+
         // Add user query to messages
         state.addUserMessage(userQuery);
-        
+
         // Route through intent classifier
         System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
         IntentClassifierAgent.IntentClassification classification = router.classifyIntentWithReason(state);
         String nextAgentName = classification.agent();
-        String reason = classification.reason();
-        
+        String reason = classification.reasonForChoosing();
+
         // Execute the appropriate agent
         String response;
         switch (nextAgentName) {
@@ -81,10 +81,10 @@ public class GMVehicleGraphAgent {
         }
 
         state.printMessages();
-        
+
         return response;
     }
-    
+
     /**
      * Create a new customer state
      */

@@ -1,7 +1,6 @@
 package com.example.agents.multiple;
 
 import dev.langchain4j.data.message.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +14,6 @@ public class CustomerState {
     public CustomerState() {
         this.messages = new ArrayList<>();
     }
-
 
     public void addUserMessage(String content) {
         messages.add(UserMessage.from(content));
@@ -34,11 +32,6 @@ public class CustomerState {
         addAiMessage(entry);
     }
 
-    public void logToolCall(String agentName, String toolName, String parameters, String result) {
-        String entry = String.format("[%s] Tool %s(%s) -> %s", agentName, toolName, parameters, result);
-        addAiMessage(entry);
-    }
-    
     public void addToolResult(String toolName, String result) {
         addToolExecutionResult(toolName, result);
     }
@@ -75,24 +68,24 @@ public class CustomerState {
         return context.toString().trim();
     }
 
-
-    public List<UserMessage> getUserMessages() {
-        return messages.stream()
-                .filter(UserMessage.class::isInstance)
-                .map(UserMessage.class::cast)
-                .toList();
+    public List<ChatMessage> getMessages() {
+        return messages;
     }
 
     public UserMessage getLastUserMessage() {
-        return getUserMessages().isEmpty() ? null : getUserMessages().getLast();
+        List<UserMessage> userMessages = messages.stream()
+                .filter(UserMessage.class::isInstance)
+                .map(UserMessage.class::cast)
+                .toList();
+
+        return userMessages.isEmpty() ? null : userMessages.getLast();
     }
 
-
     public void printMessages() {
-/*
-        System.out.println("\n=== Conversation History ===");
-        System.out.println(getConversationContext());
-        System.out.println();
-*/
+        /*
+                System.out.println("\n=== Conversation History ===");
+                System.out.println(getConversationContext());
+                System.out.println();
+        */
     }
 }

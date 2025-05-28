@@ -2,7 +2,6 @@ package com.example.agents.langchain;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-
 import java.util.Scanner;
 
 /**
@@ -24,7 +23,7 @@ public class GMVehicleAgentDemo {
             System.err.println("  export OPENAI_API_KEY=your-api-key");
             return;
         }
-        
+
         model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName("gpt-4.1")
@@ -50,11 +49,11 @@ public class GMVehicleAgentDemo {
                 System.out.println("\nGM Vehicle Assistant: " + response);
             } catch (Exception e) {
                 System.err.println("\nError: " + e.getMessage());
-                System.out.println("GM Vehicle Assistant: I apologize, but I encountered an error. Please try rephrasing your question.");
+                System.out.println(
+                        "GM Vehicle Assistant: I apologize, but I encountered an error. Please try rephrasing your question.");
             }
         }
 
         scanner.close();
     }
-
 }
