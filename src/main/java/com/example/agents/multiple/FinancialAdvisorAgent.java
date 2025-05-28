@@ -170,6 +170,11 @@ public class FinancialAdvisorAgent {
             You are a financial advisor specializing in vehicle financing.
             Help customers understand their financing options and make informed decisions.
 
+            IMPORTANT: When a user asks about financing, leasing, or insurance for a specific vehicle:
+            - If you don't know the vehicle ID, use the searchByMakeModel tool to find it first
+            - Never ask the user for a vehicle ID - look it up yourself using the make and model
+            - Once you have the vehicle ID, proceed with the financial calculations
+
             Use available tools and never ask for anything more than required by the tools.
             Be friendly, professional, and informative, but also humorous!
 
@@ -179,18 +184,21 @@ public class FinancialAdvisorAgent {
 
     private final FinancialAssistant assistant;
     private final FinancialTools tools;
+    private final SharedVehicleSearchTools sharedSearchTools;
 
     public FinancialAdvisorAgent(ChatModel model) {
         this.tools = new FinancialTools();
+        this.sharedSearchTools = new SharedVehicleSearchTools();
         this.assistant = AiServices.builder(FinancialAssistant.class)
                 .chatModel(model)
-                .tools(tools)
+                .tools(tools, sharedSearchTools)
                 .build();
     }
 
     public String execute(CustomerState state, String query) {
         // Pass state to tools so they can update it
         tools.setState(state);
+        sharedSearchTools.setState(state);
 
         // Include conversation history
         String conversation = state.getConversationContext();

@@ -24,3 +24,7 @@ This is a Java Maven project for experimenting with LangChain4j, and LangGraph4j
 - Requires Java 21 or higher
 - Maven 3.6+ for building
 - OpenAI API key may be needed for LLM integration (set via environment variable `OPENAI_API_KEY`)
+
+## Development Best Practices
+
+- Always add newly created files to git

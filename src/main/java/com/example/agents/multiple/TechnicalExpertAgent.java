@@ -177,39 +177,6 @@ public class TechnicalExpertAgent {
             return vehicle;
         }
 
-        @Tool("Search vehicle by make and model")
-        public VehicleInfo searchByMakeModel(
-                @P("Make (Chevrolet, GMC, Cadillac, Buick)") String make, @P("Model name") String model) {
-            logToolCall("searchByMakeModel", "make", make, "model", model);
-            VehicleInfo vehicle = tools.getVehicleByMakeAndModel(make, model);
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: make=")
-                    .append(make)
-                    .append(", model=")
-                    .append(model)
-                    .append("\n");
-
-            if (vehicle == null) {
-                sb.append("No vehicle found for ").append(make).append(" ").append(model);
-            } else {
-                sb.append(String.format(
-                        "Found: ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d/%d MPG",
-                        vehicle.id(),
-                        vehicle.make().getDisplayName(),
-                        vehicle.model(),
-                        vehicle.trim(),
-                        vehicle.year(),
-                        vehicle.bodyStyle(),
-                        vehicle.price(),
-                        vehicle.fuelType(),
-                        vehicle.mpgCity(),
-                        vehicle.mpgHighway()));
-            }
-            state.addToolResult("searchByMakeModel", sb.toString());
-            return vehicle;
-        }
-
         @Tool("Compare multiple vehicles")
         public VehicleComparison compareVehicles(@P("List of vehicle IDs") List<String> vehicleIds) {
             logToolCall("compareVehicles", "vehicleIds", vehicleIds);
@@ -343,14 +310,16 @@ public class TechnicalExpertAgent {
 
     private final TechnicalAssistant assistant;
     private final TechnicalTools tools;
+    private final SharedVehicleSearchTools sharedSearchTools;
 
     public TechnicalExpertAgent(ChatModel model) {
         this.tools = new TechnicalTools();
+        this.sharedSearchTools = new SharedVehicleSearchTools();
         this.assistant = TemplatedLLMServiceFactory.builder()
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
-                    aiServices.tools(tools);
+                    aiServices.tools(tools, sharedSearchTools);
                 })
                 .build()
                 .create(TechnicalAssistant.class);
@@ -358,6 +327,7 @@ public class TechnicalExpertAgent {
 
     public String execute(CustomerState state, String query) {
         tools.setState(state);
+        sharedSearchTools.setState(state);
         String response = assistant.provideTechnicalInfo(state.getMessages());
         state.addAiMessage(response);
         return response;
