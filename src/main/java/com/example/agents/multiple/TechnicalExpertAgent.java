@@ -4,13 +4,15 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.llmtoolkit.core.JteTemplateProcessor;
+import org.llmtoolkit.core.TemplatedLLMServiceFactory;
+import org.llmtoolkit.core.annotations.PP;
+import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Technical Expert Agent - Provides detailed vehicle information and comparisons
@@ -318,40 +320,25 @@ public class TechnicalExpertAgent {
                     true // IIHS Top Safety Pick
                     );
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicleId=").append(vehicleId).append("\n");
-            sb.append("Safety Ratings:\n");
-            sb.append(String.format("NHTSA Overall: %d/5 stars\n", ratings.overallRating()));
-            sb.append(String.format(
-                    "Frontal Crash: %d/5 | Side Crash: %d/5 | Rollover: %d/5\n",
-                    ratings.frontalCrashRating(), ratings.sideCrashRating(), ratings.rolloverRating()));
-            sb.append("Safety Features: ")
-                    .append(String.join(", ", ratings.safetyFeatures()))
-                    .append("\n");
-            sb.append("IIHS Top Safety Pick: ").append(ratings.topSafetyPick() ? "Yes" : "No");
-            state.addToolResult("checkSafety", sb.toString());
+            String sb = "Parameters: vehicleId=" + vehicleId + "\n" + "Safety Ratings:\n"
+                    + String.format("NHTSA Overall: %d/5 stars\n", ratings.overallRating())
+                    + String.format(
+                            "Frontal Crash: %d/5 | Side Crash: %d/5 | Rollover: %d/5\n",
+                            ratings.frontalCrashRating(), ratings.sideCrashRating(), ratings.rolloverRating())
+                    + "Safety Features: "
+                    + String.join(", ", ratings.safetyFeatures())
+                    + "\n"
+                    + "IIHS Top Safety Pick: "
+                    + (ratings.topSafetyPick() ? "Yes" : "No");
+            state.addToolResult("checkSafety", sb);
 
             return ratings;
         }
     }
 
     interface TechnicalAssistant {
-        @SystemMessage(
-                """
-            You are a knowledgeable GM vehicle technical expert and sales assistant.
-            You have access to comprehensive vehicle information and can:
-            - Search for vehicles by any criteria
-            - Provide detailed specs and features
-            - Compare multiple vehicles
-            - Explain technical differences
-            - Discuss safety ratings
-            - Calculate total cost of ownership
-
-            Use the tools to get accurate information.
-            If no preferences exist, default to showing a variety of popular options, but ask first.
-            Be helpful and informative.
-            """)
-        String provideTechnicalInfo(@UserMessage String conversation);
+        @PT(templatePath = "technical_expert.jte")
+        String provideTechnicalInfo(@PP("messages") List<ChatMessage> messages);
     }
 
     private final TechnicalAssistant assistant;
@@ -359,25 +346,20 @@ public class TechnicalExpertAgent {
 
     public TechnicalExpertAgent(ChatModel model) {
         this.tools = new TechnicalTools();
-        this.assistant = AiServices.builder(TechnicalAssistant.class)
-                .chatModel(model)
-                .tools(tools)
-                .build();
+        this.assistant = TemplatedLLMServiceFactory.builder()
+                .model(model)
+                .templateProcessor(JteTemplateProcessor.create())
+                .aiServiceCustomizer(aiServices -> {
+                    aiServices.tools(tools);
+                })
+                .build()
+                .create(TechnicalAssistant.class);
     }
 
     public String execute(CustomerState state, String query) {
-        // Pass state to tools so they can update it
         tools.setState(state);
-
-        // Include conversation history
-        String conversation = state.getConversationContext();
-
-        // Let the LLM process the request with tools
-        String response = assistant.provideTechnicalInfo(conversation);
-
-        // Log the agent response (user message already added by GMVehicleGraphAgent)
+        String response = assistant.provideTechnicalInfo(state.getMessages());
         state.addAiMessage(response);
-
         return response;
     }
 }
