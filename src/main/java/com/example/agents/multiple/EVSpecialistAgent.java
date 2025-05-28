@@ -15,8 +15,9 @@ import java.util.List;
  */
 public class EVSpecialistAgent {
 
-    static class EVTools extends BaseToolLogger {
+    static class EVTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -29,7 +30,7 @@ public class EVSpecialistAgent {
                 @P("ZIP code") String zipCode,
                 @P("Miles per year") int milesPerYear,
                 @P("Home charging percentage (0-100)") int homeChargingPercentage) {
-            logToolCall(
+            logger.logToolCall(
                     "calculateChargingCosts",
                     "vehicleId",
                     vehicleId,
@@ -75,7 +76,8 @@ public class EVSpecialistAgent {
                 @P("ZIP code or city") String location,
                 @P("Radius in miles") int radiusMiles,
                 @P("Charging type (Level2, DC_Fast, All)") String chargingType) {
-            logToolCall("findChargingStations", "location", location, "radius", radiusMiles, "type", chargingType);
+            logger.logToolCall(
+                    "findChargingStations", "location", location, "radius", radiusMiles, "type", chargingType);
             List<ChargingStation> stations = tools.findChargingStations(location, radiusMiles);
 
             StringBuilder sb = new StringBuilder();
@@ -110,7 +112,7 @@ public class EVSpecialistAgent {
                 @P("Temperature (F)") int temperature,
                 @P("Highway percentage (0-100)") int highwayPercentage,
                 @P("Use AC/Heat") boolean useClimate) {
-            logToolCall(
+            logger.logToolCall(
                     "estimateRange",
                     "vehicleId",
                     vehicleId,

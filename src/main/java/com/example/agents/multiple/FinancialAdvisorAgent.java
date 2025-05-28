@@ -15,8 +15,9 @@ import java.util.List;
  */
 public class FinancialAdvisorAgent {
 
-    static class FinancialTools extends BaseToolLogger {
+    static class FinancialTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -29,14 +30,14 @@ public class FinancialAdvisorAgent {
                 @P("Down payment amount") double downPayment,
                 @P("Loan term in months") int termMonths,
                 @P("Credit score (excellent, good, fair, poor)") String creditScore) {
-            logToolCall(
+            logger.logToolCall(
                     "calculateFinancing",
                     "vehicleId",
                     vehicleId,
                     "downPayment",
                     "$" + downPayment,
                     "termMonths",
-                    termMonths);
+                    termMonths, "creditScore", creditScore);
             FinancingOption option = tools.calculateFinancing(vehicleId, downPayment, termMonths, creditScore);
 
             StringBuilder sb = new StringBuilder();
@@ -176,6 +177,7 @@ public class FinancialAdvisorAgent {
             - Once you have the vehicle ID, proceed with the financial calculations
 
             Use available tools and never ask for anything more than required by the tools.
+            Use tools, do not invent financing or insurance options by yourself.
             Be friendly, professional, and informative, but also humorous!
 
             """)

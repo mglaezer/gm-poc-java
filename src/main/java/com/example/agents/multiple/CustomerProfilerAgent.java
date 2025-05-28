@@ -18,8 +18,9 @@ import java.util.stream.Collectors;
  */
 public class CustomerProfilerAgent {
 
-    static class ProfilerTools extends BaseToolLogger {
+    static class ProfilerTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -31,7 +32,7 @@ public class CustomerProfilerAgent {
                 @P("Family size") int familySize,
                 @P("Primary usage (commute, family, adventure)") String primaryUsage,
                 @P("List of preferences") List<String> preferences) {
-            logToolCall(
+            logger.logToolCall(
                     "analyzeNeeds", "familySize", familySize, "primaryUsage", primaryUsage, "preferences", preferences);
             CustomerProfile profile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
 
@@ -66,7 +67,7 @@ public class CustomerProfilerAgent {
                 @P("Must-have features") List<String> mustHaveFeatures,
                 @P("Budget") double budget,
                 @P("Credit score (excellent, good, fair, poor)") String creditScore) {
-            logToolCall(
+            logger.logToolCall(
                     "buildProfile",
                     "familySize",
                     familySize,
@@ -142,7 +143,7 @@ public class CustomerProfilerAgent {
 
         @Tool("Suggest vehicle categories based on profile")
         public List<String> suggestCategories(@P("Customer profile") CustomerProfile profile) {
-            logToolCall("suggestCategories", "profile", profile);
+            logger.logToolCall("suggestCategories", "profile", profile);
             List<String> categories = profile.preferredCategories().stream()
                     .map(VehicleCategory::getDisplayName)
                     .collect(Collectors.toList());
@@ -165,7 +166,7 @@ public class CustomerProfilerAgent {
         public List<VehicleInfo> filterVehicles(
                 @P("List of vehicle IDs to filter") List<String> vehicleIds,
                 @P("Customer profile") CustomerProfile profile) {
-            logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
+            logger.logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
 
             List<VehicleInfo> filtered = MockVehicleData.VEHICLES.stream()
                     .filter(v -> vehicleIds.contains(v.id()))
@@ -205,7 +206,7 @@ public class CustomerProfilerAgent {
         @Tool("Create a quick profile with minimal information")
         public CustomerProfile createQuickProfile(
                 @P("Budget") double budget, @P("Vehicle type preference (SUV, Truck, Sedan, etc)") String vehicleType) {
-            logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
+            logger.logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
 
             int familySize = vehicleType.toLowerCase().contains("suv")
                             || vehicleType.toLowerCase().contains("truck")

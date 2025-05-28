@@ -19,8 +19,9 @@ import org.llmtoolkit.core.annotations.PT;
  */
 public class TechnicalExpertAgent {
 
-    static class TechnicalTools extends BaseToolLogger {
+    static class TechnicalTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -36,7 +37,7 @@ public class TechnicalExpertAgent {
                 @P("Fuel type") String fuelType) {
             String priceRange = (minPrice != null ? "$" + minPrice : "$0") + "-"
                     + (maxPrice != null ? "$" + maxPrice : "unlimited");
-            logToolCall("searchVehicles", "category", category, "priceRange", priceRange);
+            logger.logToolCall("searchVehicles", "category", category, "priceRange", priceRange);
             VehicleCategory cat = null;
             if (category != null && !category.equalsIgnoreCase("All") && !category.equalsIgnoreCase("Any")) {
                 cat = VehicleCategory.fromString(category);
@@ -82,7 +83,7 @@ public class TechnicalExpertAgent {
         @Tool("Search vehicles by make/brand")
         public List<VehicleInfo> searchVehiclesByMake(
                 @P("Make like Chevrolet, GMC, Cadillac, Buick") String make, @P("Exclude EVs") boolean excludeEVs) {
-            logToolCall("searchVehiclesByMake", "make", make != null ? make : "null", "excludeEVs", excludeEVs);
+            logger.logToolCall("searchVehiclesByMake", "make", make != null ? make : "null", "excludeEVs", excludeEVs);
             if (make == null) {
                 return new ArrayList<>();
             }
@@ -179,7 +180,7 @@ public class TechnicalExpertAgent {
 
         @Tool("Compare multiple vehicles")
         public VehicleComparison compareVehicles(@P("List of vehicle IDs") List<String> vehicleIds) {
-            logToolCall("compareVehicles", "vehicleIds", vehicleIds);
+            logger.logToolCall("compareVehicles", "vehicleIds", vehicleIds);
             VehicleComparison comparison = tools.compareVehicles(vehicleIds);
 
             StringBuilder sb = new StringBuilder();
@@ -208,7 +209,7 @@ public class TechnicalExpertAgent {
         public String compareToCompetitors(
                 @P("GM vehicle ID") String gmVehicleId,
                 @P("Competitor vehicles (e.g., 'Toyota Highlander, Honda Pilot')") String competitorList) {
-            logToolCall("compareToCompetitors", "gmVehicleId", gmVehicleId, "competitors", competitorList);
+            logger.logToolCall("compareToCompetitors", "gmVehicleId", gmVehicleId, "competitors", competitorList);
             VehicleComparison comparison = tools.compareToCompetitors(gmVehicleId);
 
             StringBuilder result = new StringBuilder();
@@ -241,7 +242,7 @@ public class TechnicalExpertAgent {
                 @P("Vehicle ID") String vehicleId,
                 @P("Annual miles driven") int annualMiles,
                 @P("Years of ownership") int years) {
-            logToolCall("calculateTCO", "vehicleId", vehicleId, "annualMiles", annualMiles, "years", years);
+            logger.logToolCall("calculateTCO", "vehicleId", vehicleId, "annualMiles", annualMiles, "years", years);
             TotalCostOfOwnership tco = tools.calculateTotalCostOfOwnership(vehicleId, years);
 
             StringBuilder sb = new StringBuilder();
@@ -272,7 +273,7 @@ public class TechnicalExpertAgent {
 
         @Tool("Check vehicle safety ratings")
         public SafetyRatings checkSafety(@P("Vehicle ID") String vehicleId) {
-            logToolCall("checkSafety", "vehicleId", vehicleId);
+            logger.logToolCall("checkSafety", "vehicleId", vehicleId);
             SafetyRatings ratings = new SafetyRatings(
                     vehicleId,
                     5, // NHTSA overall

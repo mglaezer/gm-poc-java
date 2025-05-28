@@ -8,8 +8,9 @@ import dev.langchain4j.agent.tool.Tool;
 /**
  * Shared vehicle search tools that can be used by multiple agents
  */
-public class SharedVehicleSearchTools extends BaseToolLogger {
+public class SharedVehicleSearchTools {
     private final ToolsImpl tools = new ToolsImpl();
+    private final ToolLogger logger = new ToolLogger();
     private CustomerState state;
 
     public void setState(CustomerState state) {
@@ -19,7 +20,7 @@ public class SharedVehicleSearchTools extends BaseToolLogger {
     @Tool("Search vehicle by make and model")
     public VehicleInfo searchByMakeModel(
             @P("Make (Chevrolet, GMC, Cadillac, Buick)") String make, @P("Model name") String model) {
-        logToolCall("searchByMakeModel", "make", make, "model", model);
+        logger.logToolCall("searchByMakeModel", "make", make, "model", model);
         VehicleInfo vehicle = tools.getVehicleByMakeAndModel(make, model);
 
         StringBuilder sb = new StringBuilder();

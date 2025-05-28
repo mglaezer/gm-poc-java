@@ -16,8 +16,9 @@ import java.util.List;
  */
 public class AvailabilityCoordinatorAgent {
 
-    static class AvailabilityTools extends BaseToolLogger {
+    static class AvailabilityTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -29,7 +30,7 @@ public class AvailabilityCoordinatorAgent {
                 @P("Vehicle ID") String vehicleId,
                 @P("ZIP code") String zipCode,
                 @P("Search radius in miles") int radiusMiles) {
-            logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
+            logger.logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
             List<VehicleAvailability> availabilities = tools.checkAvailability(vehicleId, zipCode);
             VehicleAvailability availability = availabilities.isEmpty() ? null : availabilities.get(0);
 
@@ -65,7 +66,7 @@ public class AvailabilityCoordinatorAgent {
                 @P("Preferred date/time (YYYY-MM-DD HH:MM)") String dateTimeStr,
                 @P("Customer name") String customerName,
                 @P("Customer phone") String customerPhone) {
-            logToolCall(
+            logger.logToolCall(
                     "scheduleTestDrive",
                     "vehicleId",
                     vehicleId,

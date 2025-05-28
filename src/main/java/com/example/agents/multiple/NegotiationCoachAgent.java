@@ -15,8 +15,9 @@ import java.util.List;
  */
 public class NegotiationCoachAgent {
 
-    static class NegotiationTools extends BaseToolLogger {
+    static class NegotiationTools {
         private final ToolsImpl tools = new ToolsImpl();
+        private final ToolLogger logger = new ToolLogger();
         private CustomerState state;
 
         public void setState(CustomerState state) {
@@ -30,7 +31,7 @@ public class NegotiationCoachAgent {
                 @P("Year") int year,
                 @P("Mileage") int mileage,
                 @P("Condition (excellent, good, fair, poor)") String condition) {
-            logToolCall(
+            logger.logToolCall(
                     "calculateTradeIn",
                     "make",
                     make,
@@ -81,7 +82,7 @@ public class NegotiationCoachAgent {
                 @P("Market conditions (buyers_market, sellers_market, balanced)") String marketConditions,
                 @P("Time of year") String timeOfYear,
                 @P("Urgency (high, medium, low)") String urgency) {
-            logToolCall(
+            logger.logToolCall(
                     "suggestStrategy",
                     "vehicleId",
                     vehicleId,
@@ -136,7 +137,8 @@ public class NegotiationCoachAgent {
                 @P("Vehicle ID") String vehicleId,
                 @P("ZIP code") String zipCode,
                 @P("Customer type (general, military, student, first_responder)") String customerType) {
-            logToolCall("findIncentives", "vehicleId", vehicleId, "zipCode", zipCode, "customerType", customerType);
+            logger.logToolCall(
+                    "findIncentives", "vehicleId", vehicleId, "zipCode", zipCode, "customerType", customerType);
             List<Incentive> incentives = tools.findIncentivesAndRebates(vehicleId, zipCode);
 
             StringBuilder sb = new StringBuilder();
