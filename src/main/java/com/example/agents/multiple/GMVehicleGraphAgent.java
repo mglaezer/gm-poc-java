@@ -16,10 +16,6 @@ public class GMVehicleGraphAgent {
     private final EVSpecialistAgent evSpecialist;
     private final ConversationState conversationState;
 
-    public GMVehicleGraphAgent() {
-        this(ModelProvider.getDefaultModel());
-    }
-
     public GMVehicleGraphAgent(ChatModel model) {
         // Create shared conversation state
         this.conversationState = new ConversationState();
@@ -34,50 +30,43 @@ public class GMVehicleGraphAgent {
         this.evSpecialist = new EVSpecialistAgent(model, conversationState);
     }
 
-    /**
-     * Process a user query through the graph
-     */
     public String processQuery(String userQuery) {
-        // Route through intent classifier
+
         System.out.println("\n🔄 Routing: Intent Classifier analyzing query...");
         IntentClassifierAgent.IntentClassification classification = router.classifyIntentWithReason(userQuery);
         String nextAgentName = classification.agent();
         String reason = classification.reasonForChoosing();
 
-        // Execute the appropriate agent
-        String response;
-        switch (nextAgentName) {
-            case "CUSTOMER_PROFILER":
+        return switch (nextAgentName) {
+            case "CUSTOMER_PROFILER" -> {
                 System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
-                response = customerProfiler.execute(userQuery);
-                break;
-            case "TECHNICAL_EXPERT":
+                yield customerProfiler.execute(userQuery);
+            }
+            case "TECHNICAL_EXPERT" -> {
                 System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
-                response = technicalExpert.execute(userQuery);
-                break;
-            case "FINANCIAL_ADVISOR":
+                yield technicalExpert.execute(userQuery);
+            }
+            case "FINANCIAL_ADVISOR" -> {
                 System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
-                response = financialAdvisor.execute(userQuery);
-                break;
-            case "AVAILABILITY_COORDINATOR":
+                yield financialAdvisor.execute(userQuery);
+            }
+            case "AVAILABILITY_COORDINATOR" -> {
                 System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
-                response = availabilityCoordinator.execute(userQuery);
-                break;
-            case "NEGOTIATION_COACH":
+                yield availabilityCoordinator.execute(userQuery);
+            }
+            case "NEGOTIATION_COACH" -> {
                 System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
-                response = negotiationCoach.execute(userQuery);
-                break;
-            case "EV_SPECIALIST":
+                yield negotiationCoach.execute(userQuery);
+            }
+            case "EV_SPECIALIST" -> {
                 System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
-                response = evSpecialist.execute(userQuery);
-                break;
-            default:
+                yield evSpecialist.execute(userQuery);
+            }
+            default -> {
                 System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
-                response = technicalExpert.execute(userQuery);
-                break;
-        }
-
-        return response;
+                yield technicalExpert.execute(userQuery);
+            }
+        };
     }
 
     /**

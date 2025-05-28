@@ -16,7 +16,6 @@ public class GMVehicleGraphDemo {
 
         GMVehicleGraphAgent agent = new GMVehicleGraphAgent(model);
 
-        // Print initial greeting
         System.out.println(
                 "Hello! I'm your GM Vehicle Assistant. I can help you find the perfect vehicle. What are you looking for today?");
 
@@ -33,7 +32,7 @@ public class GMVehicleGraphDemo {
 
             if (userInput.equalsIgnoreCase("history")) {
                 System.out.println("\n=== Conversation History ===");
-                System.out.println("Conversation history is managed by ChatMemory");
+                System.out.println(agent.getConversationState().getChatMemory().messages());
                 System.out.println("=========================");
                 continue;
             }
@@ -41,18 +40,11 @@ public class GMVehicleGraphDemo {
             try {
                 // Process query with single agent routing (most queries only need one step)
                 String response = agent.processQuery(userInput);
-
-                // Extract just the agent response part
-                String[] parts = response.split(": ", 2);
-                if (parts.length > 1) {
-                    System.out.println("\n" + parts[0] + ":");
-                    System.out.println(parts[1]);
-                } else {
-                    System.out.println("\n" + response);
-                }
+                System.out.println("\nGM Vehicle Assistant: " + response);
 
             } catch (Exception e) {
                 System.err.println("\nError: " + e.getMessage());
+                //noinspection CallToPrintStackTrace
                 e.printStackTrace();
             }
         }
