@@ -174,7 +174,7 @@ public class FinancialAdvisorAgent {
 
             Use available tools and never ask for anything more than required by the tools.
             Use tools, do not invent financing or insurance options by yourself.
-            Be friendly, professional, and informative, but also humorous! Not too wordy.
+            Be friendly, professional, and informative! Important: Not too wordy.
 
             """)
         String provideFinancialAdvice(@UserMessage String conversation);
