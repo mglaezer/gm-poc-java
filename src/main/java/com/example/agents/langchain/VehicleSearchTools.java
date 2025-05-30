@@ -1,7 +1,6 @@
 package com.example.agents.langchain;
 
-import static com.example.agents.CommonRequirements.VehicleCategory;
-import static com.example.agents.CommonRequirements.VehicleMake;
+import static com.example.agents.multiple.ToolLogger.logToolCall;
 
 import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
@@ -15,16 +14,6 @@ import java.util.List;
 public class VehicleSearchTools {
 
     private final ToolsImpl tools = new ToolsImpl();
-
-    private void logToolCall(String toolName, Object... params) {
-        StringBuilder log = new StringBuilder("\n🔧 Tool: ").append(toolName).append("(");
-        for (int i = 0; i < params.length; i += 2) {
-            if (i > 0) log.append(", ");
-            log.append(params[i]).append("=").append(params[i + 1]);
-        }
-        log.append(")");
-        System.out.println(log);
-    }
 
     @Tool(
             "Search for vehicles by make and model. Returns detailed information about a specific vehicle. Returns null if  not found.")

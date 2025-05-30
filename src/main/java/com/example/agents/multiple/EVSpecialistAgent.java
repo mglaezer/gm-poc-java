@@ -17,7 +17,6 @@ public class EVSpecialistAgent {
 
     static class EVTools {
         private final ToolsImpl tools = new ToolsImpl();
-        private final ToolLogger logger = new ToolLogger();
 
         @Tool("Calculate charging costs for an EV")
         public ChargingCost calculateChargingCosts(
@@ -25,7 +24,7 @@ public class EVSpecialistAgent {
                 @P("ZIP code") String zipCode,
                 @P("Miles per year") int milesPerYear,
                 @P("Home charging percentage (0-100)") int homeChargingPercentage) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "calculateChargingCosts",
                     "vehicleId",
                     vehicleId,
@@ -36,8 +35,7 @@ public class EVSpecialistAgent {
                     "homeCharging%",
                     homeChargingPercentage);
             double dailyMiles = milesPerYear / 365.0;
-            ChargingCost cost = tools.calculateChargingCosts(vehicleId, zipCode, dailyMiles);
-            return cost;
+            return tools.calculateChargingCosts(vehicleId, zipCode, dailyMiles);
         }
 
         @Tool("Find charging stations near a location")
@@ -45,10 +43,9 @@ public class EVSpecialistAgent {
                 @P("ZIP code or city") String location,
                 @P("Radius in miles") int radiusMiles,
                 @P("Charging type (Level2, DC_Fast, All)") String chargingType) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "findChargingStations", "location", location, "radius", radiusMiles, "type", chargingType);
-            List<ChargingStation> stations = tools.findChargingStations(location, radiusMiles);
-            return stations;
+            return tools.findChargingStations(location, radiusMiles);
         }
 
         @Tool("Estimate real-world range for an EV")
@@ -57,7 +54,7 @@ public class EVSpecialistAgent {
                 @P("Temperature (F)") int temperature,
                 @P("Highway percentage (0-100)") int highwayPercentage,
                 @P("Use AC/Heat") boolean useClimate) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "estimateRange",
                     "vehicleId",
                     vehicleId,
@@ -69,8 +66,7 @@ public class EVSpecialistAgent {
                     useClimate);
             String weatherCondition = temperature < 32 ? "cold" : temperature > 90 ? "hot" : "moderate";
             double tripDistance = 200;
-            RangeEstimate range = tools.estimateRangeForTrip(vehicleId, tripDistance, weatherCondition);
-            return range;
+            return tools.estimateRangeForTrip(vehicleId, tripDistance, weatherCondition);
         }
     }
 
@@ -96,19 +92,16 @@ public class EVSpecialistAgent {
     }
 
     private final EVAssistant assistant;
-    private final EVTools tools;
 
     public EVSpecialistAgent(ChatModel model, ConversationState conversationState) {
-        this.tools = new EVTools();
         this.assistant = AiServices.builder(EVAssistant.class)
                 .chatModel(model)
-                .tools(tools)
+                .tools(new EVTools())
                 .chatMemory(conversationState.getChatMemory())
                 .build();
     }
 
     public String execute(String query) {
-        String response = assistant.provideEVGuidance(query);
-        return response;
+        return assistant.provideEVGuidance(query);
     }
 }

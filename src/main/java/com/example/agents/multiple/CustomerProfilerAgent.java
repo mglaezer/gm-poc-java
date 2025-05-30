@@ -20,17 +20,15 @@ public class CustomerProfilerAgent {
 
     static class ProfilerTools {
         private final ToolsImpl tools = new ToolsImpl();
-        private final ToolLogger logger = new ToolLogger();
 
         @Tool("Analyze customer needs based on family size, usage, and preferences")
         public CustomerProfile analyzeNeeds(
                 @P("Family size") int familySize,
                 @P("Primary usage (commute, family, adventure)") String primaryUsage,
                 @P("List of preferences") List<String> preferences) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "analyzeNeeds", "familySize", familySize, "primaryUsage", primaryUsage, "preferences", preferences);
-            CustomerProfile profile = tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
-            return profile;
+            return tools.analyzeCustomerNeeds(familySize, primaryUsage, preferences);
         }
 
         @Tool("Build complete customer profile from requirements")
@@ -41,7 +39,7 @@ public class CustomerProfilerAgent {
                 @P("Must-have features") List<String> mustHaveFeatures,
                 @P("Budget") double budget,
                 @P("Credit score (excellent, good, fair, poor)") String creditScore) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "buildProfile",
                     "familySize",
                     familySize,
@@ -52,7 +50,6 @@ public class CustomerProfilerAgent {
                     "budget",
                     budget);
 
-            // Create preferences list combining all usage patterns
             List<String> preferences = new ArrayList<>();
             if (dailyCommute.toLowerCase().contains("highway")
                     || dailyCommute.toLowerCase().contains("long")) {
@@ -73,38 +70,34 @@ public class CustomerProfilerAgent {
 
             // Adjust budget range (80% to 100% of stated budget)
             double adjustedBudgetMin = budget * 0.8;
-            double adjustedBudgetMax = budget;
 
-            CustomerProfile profile = new CustomerProfile(
+            return new CustomerProfile(
                     familySize,
                     primaryUsage,
                     preferences,
                     adjustedBudgetMin,
-                    adjustedBudgetMax,
+                    budget,
                     baseProfile.preferredCategories(),
                     baseProfile.needsTowing(),
                     baseProfile.needsOffRoad(),
                     baseProfile.fuelPreference());
-
-            return profile;
         }
 
         @Tool("Suggest vehicle categories based on profile")
         public List<String> suggestCategories(@P("Customer profile") CustomerProfile profile) {
-            logger.logToolCall("suggestCategories", "profile", profile);
-            List<String> categories = profile.preferredCategories().stream()
+            ToolLogger.logToolCall("suggestCategories", "profile", profile);
+            return profile.preferredCategories().stream()
                     .map(VehicleCategory::getDisplayName)
                     .collect(Collectors.toList());
-            return categories;
         }
 
         @Tool("Filter vehicles based on customer preferences")
         public List<VehicleInfo> filterVehicles(
                 @P("List of vehicle IDs to filter") List<String> vehicleIds,
                 @P("Customer profile") CustomerProfile profile) {
-            logger.logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
+            ToolLogger.logToolCall("filterVehicles", "vehicleIds", vehicleIds, "profile", profile);
 
-            List<VehicleInfo> filtered = MockVehicleData.VEHICLES.stream()
+            return MockVehicleData.VEHICLES.stream()
                     .filter(v -> vehicleIds.contains(v.id()))
                     .filter(v -> v.price() >= profile.budgetMin() && v.price() <= profile.budgetMax())
                     .filter(v -> {
@@ -113,14 +106,12 @@ public class CustomerProfilerAgent {
                                 .anyMatch(cat -> cat.getDisplayName().equalsIgnoreCase(vehicleCategory));
                     })
                     .collect(Collectors.toList());
-
-            return filtered;
         }
 
         @Tool("Create a quick profile with minimal information")
         public CustomerProfile createQuickProfile(
                 @P("Budget") double budget, @P("Vehicle type preference (SUV, Truck, Sedan, etc)") String vehicleType) {
-            logger.logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
+            ToolLogger.logToolCall("createQuickProfile", "budget", budget, "vehicleType", vehicleType);
 
             int familySize = vehicleType.toLowerCase().contains("suv")
                             || vehicleType.toLowerCase().contains("truck")
@@ -132,10 +123,8 @@ public class CustomerProfilerAgent {
             List<VehicleCategory> categories =
                     category != null ? List.of(category) : List.of(VehicleCategory.SUV, VehicleCategory.SEDAN);
 
-            CustomerProfile profile = new CustomerProfile(
+            return new CustomerProfile(
                     familySize, "General use", preferences, budget * 0.8, budget, categories, false, false, "gasoline");
-
-            return profile;
         }
     }
 
@@ -169,13 +158,11 @@ public class CustomerProfilerAgent {
     }
 
     private final ProfilerAssistant assistant;
-    private final ProfilerTools tools;
 
     public CustomerProfilerAgent(ChatModel model, ConversationState conversationState) {
-        this.tools = new ProfilerTools();
         this.assistant = AiServices.builder(ProfilerAssistant.class)
                 .chatModel(model)
-                .tools(tools)
+                .tools(new ProfilerTools())
                 .chatMemory(conversationState.getChatMemory())
                 .build();
     }

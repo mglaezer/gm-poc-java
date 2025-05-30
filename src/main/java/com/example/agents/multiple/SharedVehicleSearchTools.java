@@ -10,40 +10,11 @@ import dev.langchain4j.agent.tool.Tool;
  */
 public class SharedVehicleSearchTools {
     private final ToolsImpl tools = new ToolsImpl();
-    private final ToolLogger logger = new ToolLogger();
 
     @Tool("Search vehicle by make and model")
     public VehicleInfo searchByMakeModel(
             @P("Make (Chevrolet, GMC, Cadillac, Buick)") String make, @P("Model name") String model) {
-        logger.logToolCall("searchByMakeModel", "make", make, "model", model);
-        VehicleInfo vehicle = tools.getVehicleByMakeAndModel(make, model);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Parameters: make=")
-                .append(make)
-                .append(", model=")
-                .append(model)
-                .append("\n");
-
-        if (vehicle == null) {
-            sb.append("No vehicle found for ").append(make).append(" ").append(model);
-        } else {
-            sb.append(String.format(
-                    "Found: ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d/%d MPG",
-                    vehicle.id(),
-                    vehicle.make().getDisplayName(),
-                    vehicle.model(),
-                    vehicle.trim(),
-                    vehicle.year(),
-                    vehicle.bodyStyle(),
-                    vehicle.price(),
-                    vehicle.fuelType(),
-                    vehicle.mpgCity(),
-                    vehicle.mpgHighway()));
-        }
-
-        // ChatMemory automatically tracks tool results
-
-        return vehicle;
+        ToolLogger.logToolCall("searchByMakeModel", "make", make, "model", model);
+        return tools.getVehicleByMakeAndModel(make, model);
     }
 }

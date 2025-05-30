@@ -5,7 +5,7 @@ package com.example.agents.multiple;
  */
 public class ToolLogger {
 
-    public void logToolCall(String toolName, Object... params) {
+    public static void logToolCall(String toolName, Object... params) {
         StringBuilder log = new StringBuilder("    🔧 Tool: ").append(toolName).append("(");
         for (int i = 0; i < params.length; i += 2) {
             if (i > 0) log.append(", ");
