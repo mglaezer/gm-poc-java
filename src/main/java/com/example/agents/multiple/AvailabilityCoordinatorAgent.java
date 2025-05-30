@@ -28,28 +28,6 @@ public class AvailabilityCoordinatorAgent {
             logger.logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
             List<VehicleAvailability> availabilities = tools.checkAvailability(vehicleId, zipCode);
             VehicleAvailability availability = availabilities.isEmpty() ? null : availabilities.get(0);
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicleId=")
-                    .append(vehicleId)
-                    .append(", zipCode=")
-                    .append(zipCode)
-                    .append(", radius=")
-                    .append(radiusMiles)
-                    .append(" miles\n");
-
-            if (availability == null) {
-                sb.append("No availability information found for this vehicle");
-            } else {
-                sb.append(String.format("Vehicle Availability:\n"));
-                sb.append(String.format("Dealer ID: %s\n", availability.dealerId()));
-                sb.append(String.format("In Stock: %s\n", availability.inStock() ? "Yes" : "No"));
-                if (availability.inStock()) {
-                    sb.append(String.format("Quantity Available: %d\n", availability.quantity()));
-                } else {
-                    sb.append(String.format("Estimated Delivery: %s\n", availability.estimatedDelivery()));
-                }
-            }
             return availability;
         }
 
@@ -74,31 +52,6 @@ public class AvailabilityCoordinatorAgent {
             LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr.replace(" ", "T"));
             TestDriveAppointment appointment =
                     tools.scheduleTestDrive(vehicleId, dealerId, dateTime, customerName, customerPhone);
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: vehicleId=")
-                    .append(vehicleId)
-                    .append(", dealerId=")
-                    .append(dealerId)
-                    .append(", dateTime=")
-                    .append(dateTimeStr)
-                    .append(", customer=")
-                    .append(customerName)
-                    .append(", phone=")
-                    .append(customerPhone)
-                    .append("\n");
-
-            if (appointment == null) {
-                sb.append("Unable to schedule test drive - please check availability");
-            } else {
-                sb.append(String.format("Test Drive Scheduled:\n"));
-                sb.append(String.format("Confirmation Number: %s\n", appointment.confirmationNumber()));
-                sb.append(String.format("Vehicle: %s\n", appointment.vehicleId()));
-                sb.append(String.format("Dealer: %s\n", appointment.dealerId()));
-                sb.append(String.format("Date/Time: %s\n", appointment.appointmentTime()));
-                sb.append(String.format("Customer: %s (%s)", appointment.customerName(), appointment.customerPhone()));
-            }
-
             return appointment;
         }
     }

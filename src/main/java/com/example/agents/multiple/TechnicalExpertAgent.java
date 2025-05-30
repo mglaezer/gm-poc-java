@@ -38,38 +38,6 @@ public class TechnicalExpertAgent {
             }
             SearchCriteria criteria = new SearchCriteria(cat, minPrice, maxPrice, minMpg, fuelType, null);
             List<VehicleInfo> results = tools.searchVehicleInventory(criteria);
-
-            // Log results as ToolExecutionResultMessage
-            StringBuilder sb = new StringBuilder();
-            sb.append("Parameters: category=")
-                    .append(category != null ? category : "all")
-                    .append(", price=")
-                    .append(priceRange)
-                    .append(", minMPG=")
-                    .append(minMpg != null ? minMpg : "any")
-                    .append(", fuel=")
-                    .append(fuelType != null ? fuelType : "any")
-                    .append("\n");
-
-            if (results.isEmpty()) {
-                sb.append("No vehicles found matching criteria");
-            } else {
-                sb.append("Found ").append(results.size()).append(" vehicles:\n");
-                for (VehicleInfo v : results) {
-                    sb.append(String.format(
-                            "- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %dmpg city/%dmpg hwy\n",
-                            v.id(),
-                            v.make().getDisplayName(),
-                            v.model(),
-                            v.trim(),
-                            v.year(),
-                            v.bodyStyle(),
-                            v.price(),
-                            v.fuelType(),
-                            v.mpgCity(),
-                            v.mpgHighway()));
-                }
-            }
             // ChatMemory automatically tracks tool results
             return results;
         }
@@ -94,39 +62,7 @@ public class TechnicalExpertAgent {
                         .filter(v -> !"Electric".equalsIgnoreCase(v.fuelType()))
                         .collect(Collectors.toList());
             }
-
-            // Log detailed results to state as ToolExecutionResultMessage
-            StringBuilder resultDetails = new StringBuilder();
-
-            if (results.isEmpty()) {
-                resultDetails.append("No vehicles found for make: ").append(make);
-                if (excludeEVs) {
-                    resultDetails.append(" (excluding EVs)");
-                }
-            } else {
-                resultDetails.append(String.format("Found %d %s vehicles", results.size(), make));
-                if (excludeEVs) {
-                    resultDetails.append(" (excluding EVs)");
-                }
-                resultDetails.append(":\n");
-                for (VehicleInfo vehicle : results) {
-                    resultDetails.append(String.format(
-                            "- ID: %s | %s %s %s (%d) - %s, $%,.0f, %s, %d MPG city/%d MPG hwy\n",
-                            vehicle.id(),
-                            vehicle.make().getDisplayName(),
-                            vehicle.model(),
-                            vehicle.trim(),
-                            vehicle.year(),
-                            vehicle.bodyStyle(),
-                            vehicle.price(),
-                            vehicle.fuelType(),
-                            vehicle.mpgCity(),
-                            vehicle.mpgHighway()));
-                }
-            }
-
             // ChatMemory automatically tracks tool results
-
             return results;
         }
 
