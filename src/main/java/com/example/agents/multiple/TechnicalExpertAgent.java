@@ -304,19 +304,15 @@ public class TechnicalExpertAgent {
     }
 
     private final TechnicalAssistant assistant;
-    private final TechnicalTools tools;
-    private final SharedVehicleSearchTools sharedSearchTools;
     private final ConversationState conversationState;
 
     public TechnicalExpertAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
-        this.tools = new TechnicalTools();
-        this.sharedSearchTools = new SharedVehicleSearchTools();
         this.assistant = TemplatedLLMServiceFactory.builder()
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
-                    aiServices.tools(tools, sharedSearchTools);
+                    aiServices.tools(new TechnicalTools(), new SharedVehicleSearchTools());
                     aiServices.chatMemory(conversationState.getChatMemory());
                 })
                 .build()
