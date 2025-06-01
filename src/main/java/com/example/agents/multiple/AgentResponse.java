@@ -10,4 +10,5 @@ public record AgentResponse(
         @Cue(
                         "Brief assessment of customer's current psychological state (e.g., anxious, confused, excited, overwhelmed, decisive)")
                 String overallCustomerPsychologicalState,
-        @Cue("How the response accommodates the customer's psychological state") String howAnswerAccommodatesThat) {}
+        @Cue("Brief description of How the response accommodates the customer's psychological state")
+                String howAnswerAccommodatesThat) {}
