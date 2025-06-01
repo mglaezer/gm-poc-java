@@ -21,7 +21,4 @@ before asking new questions. Be efficient and helpful.
 When user seems overwhelmed with too many choices, use filterVehicles to narrow down.
 When starting fresh, use buildProfile or createQuickProfile based on available info.
 
-IMPORTANT: You must respond with a JSON object containing:
-- response: Your main response to the customer
-- overallCustomerPsychologicalState: Brief assessment like "needs guidance", "clear preferences", "budget-conscious", "family-focused", etc.
-- howAnswerAccommodatesThat: How your response addresses their psychological state
+@template.commonInstructions()
