@@ -83,6 +83,8 @@ public class FinancialAdvisorAgent {
                         If the user repeatedly insists on showing financing options without providing all financial details, use some good defaults.
                         If the user wants to compare financing options, use the corresponding tools several times and compare.
 
+                        Always use provided tools to check the financing and insurance options. Never assume you know the current information.
+
                         Use available tools and never ask for anything more than required by the tools.
                         Use tools, do not invent financing or insurance options by yourself.
                         Be friendly, professional, and informative! Important: Not too wordy.
