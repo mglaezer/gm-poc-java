@@ -4,12 +4,13 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.llmtoolkit.core.JteTemplateProcessor;
+import org.llmtoolkit.core.TemplatedLLMServiceFactory;
+import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Availability Coordinator Agent - Checks inventory and schedules test drives
@@ -18,17 +19,16 @@ public class AvailabilityCoordinatorAgent {
 
     static class AvailabilityTools {
         private final ToolsImpl tools = new ToolsImpl();
-        private final ToolLogger logger = new ToolLogger();
 
         @Tool("Check vehicle availability at dealers")
         public VehicleAvailability checkAvailability(
                 @P("Vehicle ID") String vehicleId,
                 @P("ZIP code") String zipCode,
                 @P("Search radius in miles") int radiusMiles) {
-            logger.logToolCall("checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
+            ToolLogger.logToolCall(
+                    "checkAvailability", "vehicleId", vehicleId, "zipCode", zipCode, "radius", radiusMiles);
             List<VehicleAvailability> availabilities = tools.checkAvailability(vehicleId, zipCode);
-            VehicleAvailability availability = availabilities.isEmpty() ? null : availabilities.get(0);
-            return availability;
+            return availabilities.isEmpty() ? null : availabilities.getFirst();
         }
 
         @Tool("Schedule a test drive appointment")
@@ -38,7 +38,7 @@ public class AvailabilityCoordinatorAgent {
                 @P("Preferred date/time (YYYY-MM-DD HH:MM)") String dateTimeStr,
                 @P("Customer name") String customerName,
                 @P("Customer phone") String customerPhone) {
-            logger.logToolCall(
+            ToolLogger.logToolCall(
                     "scheduleTestDrive",
                     "vehicleId",
                     vehicleId,
@@ -50,46 +50,33 @@ public class AvailabilityCoordinatorAgent {
                     customerName);
 
             LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr.replace(" ", "T"));
-            TestDriveAppointment appointment =
-                    tools.scheduleTestDrive(vehicleId, dealerId, dateTime, customerName, customerPhone);
-            return appointment;
+            return tools.scheduleTestDrive(vehicleId, dealerId, dateTime, customerName, customerPhone);
         }
     }
 
     interface AvailabilityAssistant {
-        @SystemMessage(
-                """
-            You are a vehicle availability coordinator for GM dealerships.
-            Your responsibilities include:
-            - Checking real-time inventory at local dealers
-            - Finding vehicles in stock or with upcoming availability
-            - Scheduling test drive appointments
-            - Providing dealer location information
-
-            Always:
-            - Check availability before scheduling test drives
-            - Confirm customer contact information
-            - Provide clear next steps
-            - Set realistic expectations for vehicle availability
-            - Be helpful in finding alternative options if the desired vehicle isn't available
-            """)
-        String assistWithAvailability(@UserMessage String conversation);
+        @PT(templatePath = "availability_coordinator.jte")
+        String assistWithAvailability();
     }
 
     private final AvailabilityAssistant assistant;
-    private final AvailabilityTools tools;
+    private final ConversationState conversationState;
 
     public AvailabilityCoordinatorAgent(ChatModel model, ConversationState conversationState) {
-        this.tools = new AvailabilityTools();
-        this.assistant = AiServices.builder(AvailabilityAssistant.class)
-                .chatModel(model)
-                .tools(tools)
-                .chatMemory(conversationState.getChatMemory())
-                .build();
+        this.conversationState = conversationState;
+        this.assistant = TemplatedLLMServiceFactory.builder()
+                .model(model)
+                .templateProcessor(JteTemplateProcessor.create())
+                .aiServiceCustomizer(aiServices -> {
+                    aiServices.tools(new AvailabilityTools(), new SharedVehicleSearchTools());
+                    aiServices.chatMemory(conversationState.getChatMemory());
+                })
+                .build()
+                .create(AvailabilityAssistant.class);
     }
 
     public String execute(String query) {
-        String response = assistant.assistWithAvailability(query);
-        return response;
+        conversationState.getChatMemory().add(UserMessage.from(query));
+        return assistant.assistWithAvailability();
     }
 }

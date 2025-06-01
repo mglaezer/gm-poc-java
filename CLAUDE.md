@@ -31,3 +31,4 @@ This is a Java Maven project for experimenting with LangChain4j, and LangGraph4j
 - Do not add new comments to the code you create
 - Do not remove existing comments from the code, unless you modified the code in a way that makes the comment obsolete
 - Do not remove existing tests, do not remove existing test data
+- Before telling something is done, make sure the project compiles

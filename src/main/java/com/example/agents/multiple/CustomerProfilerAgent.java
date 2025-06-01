@@ -5,13 +5,14 @@ import com.example.agents.MockVehicleData;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.llmtoolkit.core.JteTemplateProcessor;
+import org.llmtoolkit.core.TemplatedLLMServiceFactory;
+import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Customer Profiler Agent - Understands customer needs and builds profiles
@@ -129,45 +130,28 @@ public class CustomerProfilerAgent {
     }
 
     interface ProfilerAssistant {
-        @SystemMessage(
-                """
-            You are a customer profiling specialist for GM vehicles.
-            Your role is to understand customer needs and build comprehensive profiles.
-
-            You should:
-            - Ask minimal questions to understand needs
-            - Extract information from conversation context
-            - Build profiles that capture budget, family size, usage patterns
-            - Suggest appropriate vehicle categories
-            - Help narrow down vehicle choices
-
-            Focus on:
-            - Family size and passenger needs
-            - Daily commute and weekend activities
-            - Budget constraints
-            - Must-have features
-            - Fuel preferences
-
-            Always try to extract this information from the conversation history first
-            before asking new questions. Be efficient and helpful.
-
-            When user seems overwhelmed with too many choices, use filterVehicles to narrow down.
-            When starting fresh, use buildProfile or createQuickProfile based on available info.
-            """)
-        String assistCustomer(@UserMessage String conversation);
+        @PT(templatePath = "customer_profiler.jte")
+        String assistCustomer();
     }
 
     private final ProfilerAssistant assistant;
+    private final ConversationState conversationState;
 
     public CustomerProfilerAgent(ChatModel model, ConversationState conversationState) {
-        this.assistant = AiServices.builder(ProfilerAssistant.class)
-                .chatModel(model)
-                .tools(new ProfilerTools())
-                .chatMemory(conversationState.getChatMemory())
-                .build();
+        this.conversationState = conversationState;
+        this.assistant = TemplatedLLMServiceFactory.builder()
+                .model(model)
+                .templateProcessor(JteTemplateProcessor.create())
+                .aiServiceCustomizer(aiServices -> {
+                    aiServices.tools(new ProfilerTools(), new SharedVehicleSearchTools());
+                    aiServices.chatMemory(conversationState.getChatMemory());
+                })
+                .build()
+                .create(ProfilerAssistant.class);
     }
 
     public String execute(String query) {
-        return assistant.assistCustomer(query);
+        conversationState.getChatMemory().add(UserMessage.from(query));
+        return assistant.assistCustomer();
     }
 }

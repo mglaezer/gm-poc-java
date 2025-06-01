@@ -4,11 +4,12 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
 import java.util.List;
+import org.llmtoolkit.core.JteTemplateProcessor;
+import org.llmtoolkit.core.TemplatedLLMServiceFactory;
+import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Negotiation Coach Agent - Helps with pricing strategy and trade-ins
@@ -84,38 +85,28 @@ public class NegotiationCoachAgent {
     }
 
     interface NegotiationAssistant {
-        @SystemMessage(
-                """
-            You are a negotiation coach helping customers get the best deal on GM vehicles.
-            Your expertise includes:
-            - Trade-in value assessment
-            - Market timing and seasonal trends
-            - Negotiation tactics and strategies
-            - Understanding of dealer incentives and rebates
-            - Price comparison and fair market value
-
-            Always:
-            - Empower customers with knowledge
-            - Suggest realistic negotiation targets
-            - Explain the rationale behind strategies
-            - Consider the customer's specific situation
-            - Be honest about market conditions
-            - Help customers understand total deal value (not just monthly payments)
-            """)
-        String provideNegotiationCoaching(@UserMessage String conversation);
+        @PT(templatePath = "negotiation_coach.jte")
+        String provideNegotiationCoaching();
     }
 
     private final NegotiationAssistant assistant;
+    private final ConversationState conversationState;
 
     public NegotiationCoachAgent(ChatModel model, ConversationState conversationState) {
-        this.assistant = AiServices.builder(NegotiationAssistant.class)
-                .chatModel(model)
-                .tools(new NegotiationTools())
-                .chatMemory(conversationState.getChatMemory())
-                .build();
+        this.conversationState = conversationState;
+        this.assistant = TemplatedLLMServiceFactory.builder()
+                .model(model)
+                .templateProcessor(JteTemplateProcessor.create())
+                .aiServiceCustomizer(aiServices -> {
+                    aiServices.tools(new NegotiationTools(), new SharedVehicleSearchTools());
+                    aiServices.chatMemory(conversationState.getChatMemory());
+                })
+                .build()
+                .create(NegotiationAssistant.class);
     }
 
     public String execute(String query) {
-        return assistant.provideNegotiationCoaching(query);
+        conversationState.getChatMemory().add(UserMessage.from(query));
+        return assistant.provideNegotiationCoaching();
     }
 }

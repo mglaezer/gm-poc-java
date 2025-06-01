@@ -4,11 +4,12 @@ import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
 import java.util.List;
+import org.llmtoolkit.core.JteTemplateProcessor;
+import org.llmtoolkit.core.TemplatedLLMServiceFactory;
+import org.llmtoolkit.core.annotations.PT;
 
 /**
  * EV Specialist Agent - Expert on electric vehicles and charging
@@ -71,37 +72,28 @@ public class EVSpecialistAgent {
     }
 
     interface EVAssistant {
-        @SystemMessage(
-                """
-            You are an EV specialist for GM electric vehicles.
-            Your expertise includes:
-            - Electric vehicle technology and benefits
-            - Charging infrastructure and costs
-            - Range estimation and factors affecting range
-            - EV ownership experience
-            - Addressing common EV concerns (range anxiety, charging time, etc.)
-
-            Always:
-            - Be enthusiastic about EV technology
-            - Address concerns honestly and factually
-            - Provide practical advice for EV ownership
-            - Compare EV costs to gas vehicles when relevant
-            - Emphasize GM's EV advantages
-            """)
-        String provideEVGuidance(@UserMessage String conversation);
+        @PT(templatePath = "ev_specialist.jte")
+        String provideEVGuidance();
     }
 
     private final EVAssistant assistant;
+    private final ConversationState conversationState;
 
     public EVSpecialistAgent(ChatModel model, ConversationState conversationState) {
-        this.assistant = AiServices.builder(EVAssistant.class)
-                .chatModel(model)
-                .tools(new EVTools())
-                .chatMemory(conversationState.getChatMemory())
-                .build();
+        this.conversationState = conversationState;
+        this.assistant = TemplatedLLMServiceFactory.builder()
+                .model(model)
+                .templateProcessor(JteTemplateProcessor.create())
+                .aiServiceCustomizer(aiServices -> {
+                    aiServices.tools(new EVTools(), new SharedVehicleSearchTools());
+                    aiServices.chatMemory(conversationState.getChatMemory());
+                })
+                .build()
+                .create(EVAssistant.class);
     }
 
     public String execute(String query) {
-        return assistant.provideEVGuidance(query);
+        conversationState.getChatMemory().add(UserMessage.from(query));
+        return assistant.provideEVGuidance();
     }
 }
