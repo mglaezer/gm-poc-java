@@ -40,31 +40,31 @@ public class GMVehicleGraphAgent {
         return switch (nextAgentName) {
             case "CUSTOMER_PROFILER" -> {
                 System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
-                yield customerProfiler.execute(userQuery);
+                yield customerProfiler.execute(userQuery).response();
             }
             case "TECHNICAL_EXPERT" -> {
                 System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
-                yield technicalExpert.execute(userQuery);
+                yield technicalExpert.execute(userQuery).response();
             }
             case "FINANCIAL_ADVISOR" -> {
                 System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
-                yield financialAdvisor.execute(userQuery);
+                yield financialAdvisor.execute(userQuery).response();
             }
             case "AVAILABILITY_COORDINATOR" -> {
                 System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
-                yield availabilityCoordinator.execute(userQuery);
+                yield availabilityCoordinator.execute(userQuery).response();
             }
             case "NEGOTIATION_COACH" -> {
                 System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
-                yield negotiationCoach.execute(userQuery);
+                yield negotiationCoach.execute(userQuery).response();
             }
             case "EV_SPECIALIST" -> {
                 System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
-                yield evSpecialist.execute(userQuery);
+                yield evSpecialist.execute(userQuery).response();
             }
             default -> {
                 System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
-                yield technicalExpert.execute(userQuery);
+                yield technicalExpert.execute(userQuery).response();
             }
         };
     }

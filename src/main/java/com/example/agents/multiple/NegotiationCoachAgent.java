@@ -7,6 +7,7 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
+import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
 import org.llmtoolkit.core.annotations.PT;
@@ -86,7 +87,7 @@ public class NegotiationCoachAgent {
 
     interface NegotiationAssistant {
         @PT(templatePath = "negotiation_coach.jte")
-        String provideNegotiationCoaching();
+        AgentResponse provideNegotiationCoaching();
     }
 
     private final NegotiationAssistant assistant;
@@ -95,6 +96,7 @@ public class NegotiationCoachAgent {
     public NegotiationCoachAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
         this.assistant = TemplatedLLMServiceFactory.builder()
+                .serviceStrategy(new JacksonSourceResponseStructuringStrategy())
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
@@ -105,7 +107,7 @@ public class NegotiationCoachAgent {
                 .create(NegotiationAssistant.class);
     }
 
-    public String execute(String query) {
+    public AgentResponse execute(String query) {
         conversationState.getChatMemory().add(UserMessage.from(query));
         return assistant.provideNegotiationCoaching();
     }

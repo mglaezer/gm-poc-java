@@ -8,6 +8,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
 import org.llmtoolkit.core.annotations.PT;
@@ -56,7 +57,7 @@ public class AvailabilityCoordinatorAgent {
 
     interface AvailabilityAssistant {
         @PT(templatePath = "availability_coordinator.jte")
-        String assistWithAvailability();
+        AgentResponse assistWithAvailability();
     }
 
     private final AvailabilityAssistant assistant;
@@ -65,6 +66,7 @@ public class AvailabilityCoordinatorAgent {
     public AvailabilityCoordinatorAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
         this.assistant = TemplatedLLMServiceFactory.builder()
+                .serviceStrategy(new JacksonSourceResponseStructuringStrategy())
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
@@ -75,7 +77,7 @@ public class AvailabilityCoordinatorAgent {
                 .create(AvailabilityAssistant.class);
     }
 
-    public String execute(String query) {
+    public AgentResponse execute(String query) {
         conversationState.getChatMemory().add(UserMessage.from(query));
         return assistant.assistWithAvailability();
     }

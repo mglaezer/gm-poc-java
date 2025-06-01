@@ -10,6 +10,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
 import org.llmtoolkit.core.annotations.PT;
@@ -131,7 +132,7 @@ public class CustomerProfilerAgent {
 
     interface ProfilerAssistant {
         @PT(templatePath = "customer_profiler.jte")
-        String assistCustomer();
+        AgentResponse assistCustomer();
     }
 
     private final ProfilerAssistant assistant;
@@ -140,6 +141,7 @@ public class CustomerProfilerAgent {
     public CustomerProfilerAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
         this.assistant = TemplatedLLMServiceFactory.builder()
+                .serviceStrategy(new JacksonSourceResponseStructuringStrategy())
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
@@ -150,7 +152,7 @@ public class CustomerProfilerAgent {
                 .create(ProfilerAssistant.class);
     }
 
-    public String execute(String query) {
+    public AgentResponse execute(String query) {
         conversationState.getChatMemory().add(UserMessage.from(query));
         return assistant.assistCustomer();
     }

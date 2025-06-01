@@ -7,6 +7,7 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
+import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
 import org.llmtoolkit.core.annotations.PT;
@@ -73,7 +74,7 @@ public class EVSpecialistAgent {
 
     interface EVAssistant {
         @PT(templatePath = "ev_specialist.jte")
-        String provideEVGuidance();
+        AgentResponse provideEVGuidance();
     }
 
     private final EVAssistant assistant;
@@ -82,6 +83,7 @@ public class EVSpecialistAgent {
     public EVSpecialistAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
         this.assistant = TemplatedLLMServiceFactory.builder()
+                .serviceStrategy(new JacksonSourceResponseStructuringStrategy())
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
@@ -92,7 +94,7 @@ public class EVSpecialistAgent {
                 .create(EVAssistant.class);
     }
 
-    public String execute(String query) {
+    public AgentResponse execute(String query) {
         conversationState.getChatMemory().add(UserMessage.from(query));
         return assistant.provideEVGuidance();
     }

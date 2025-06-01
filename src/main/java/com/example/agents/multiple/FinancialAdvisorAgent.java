@@ -10,6 +10,7 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
+import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
 import org.llmtoolkit.core.JteTemplateProcessor;
 import org.llmtoolkit.core.TemplatedLLMServiceFactory;
 import org.llmtoolkit.core.annotations.PT;
@@ -72,7 +73,7 @@ public class FinancialAdvisorAgent {
 
     interface FinancialAssistant {
         @PT(templatePath = "financial_advisor.jte")
-        String provideFinancialAdvice();
+        AgentResponse provideFinancialAdvice();
     }
 
     private final FinancialAssistant assistant;
@@ -81,6 +82,7 @@ public class FinancialAdvisorAgent {
     public FinancialAdvisorAgent(ChatModel model, ConversationState conversationState) {
         this.conversationState = conversationState;
         this.assistant = TemplatedLLMServiceFactory.builder()
+                .serviceStrategy(new JacksonSourceResponseStructuringStrategy())
                 .model(model)
                 .templateProcessor(JteTemplateProcessor.create())
                 .aiServiceCustomizer(aiServices -> {
@@ -91,7 +93,7 @@ public class FinancialAdvisorAgent {
                 .create(FinancialAssistant.class);
     }
 
-    public String execute(String query) {
+    public AgentResponse execute(String query) {
         conversationState.getChatMemory().add(UserMessage.from(query));
         return assistant.provideFinancialAdvice();
     }
