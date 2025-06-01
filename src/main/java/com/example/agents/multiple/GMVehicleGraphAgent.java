@@ -37,36 +37,43 @@ public class GMVehicleGraphAgent {
         String nextAgentName = classification.agent();
         String reason = classification.reasonForChoosing();
 
-        return switch (nextAgentName) {
-            case "CUSTOMER_PROFILER" -> {
-                System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
-                yield customerProfiler.execute(userQuery).response();
-            }
-            case "TECHNICAL_EXPERT" -> {
-                System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
-                yield technicalExpert.execute(userQuery).response();
-            }
-            case "FINANCIAL_ADVISOR" -> {
-                System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
-                yield financialAdvisor.execute(userQuery).response();
-            }
-            case "AVAILABILITY_COORDINATOR" -> {
-                System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
-                yield availabilityCoordinator.execute(userQuery).response();
-            }
-            case "NEGOTIATION_COACH" -> {
-                System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
-                yield negotiationCoach.execute(userQuery).response();
-            }
-            case "EV_SPECIALIST" -> {
-                System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
-                yield evSpecialist.execute(userQuery).response();
-            }
-            default -> {
-                System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
-                yield technicalExpert.execute(userQuery).response();
-            }
-        };
+        AgentResponse agentResponse =
+                switch (nextAgentName) {
+                    case "CUSTOMER_PROFILER" -> {
+                        System.out.println("➡️  Agent: Customer Profiler (" + reason + ")");
+                        yield customerProfiler.execute(userQuery);
+                    }
+                    case "TECHNICAL_EXPERT" -> {
+                        System.out.println("➡️  Agent: Technical Expert (" + reason + ")");
+                        yield technicalExpert.execute(userQuery);
+                    }
+                    case "FINANCIAL_ADVISOR" -> {
+                        System.out.println("➡️  Agent: Financial Advisor (" + reason + ")");
+                        yield financialAdvisor.execute(userQuery);
+                    }
+                    case "AVAILABILITY_COORDINATOR" -> {
+                        System.out.println("➡️  Agent: Availability Coordinator (" + reason + ")");
+                        yield availabilityCoordinator.execute(userQuery);
+                    }
+                    case "NEGOTIATION_COACH" -> {
+                        System.out.println("➡️  Agent: Negotiation Coach (" + reason + ")");
+                        yield negotiationCoach.execute(userQuery);
+                    }
+                    case "EV_SPECIALIST" -> {
+                        System.out.println("➡️  Agent: EV Specialist (" + reason + ")");
+                        yield evSpecialist.execute(userQuery);
+                    }
+                    default -> {
+                        System.out.println("➡️  Agent: Technical Expert (default - " + reason + ")");
+                        yield technicalExpert.execute(userQuery);
+                    }
+                };
+
+        // Print psychological state attributes
+        System.out.println("\n🧠 Customer Psychological State: " + agentResponse.overallCustomerPsychologicalState());
+        System.out.println("🎯 Response Strategy: " + agentResponse.howAnswerAccommodatesThat());
+
+        return agentResponse.response();
     }
 
     /**
