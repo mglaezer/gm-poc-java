@@ -4,8 +4,8 @@
 
 This document serves to initiate detailed discussions about integrating AI capabilities into the current dash platform. The objectives are to:
 
-- Explore possibilities for embedding AI functionality within existing architecture
-- Outline short-term and long-term implementation plans and assess feasibility
+- Explore possibilities for embedding AI functionality within existing DASH architecture
+- Provoke discussion on short-term and long-term implementation plans and assess feasibility
 - Present the overall architecture of proposed AI components for stakeholder review
 - Solicit critical feedback on approach, technical feasibility, and architectural decisions
 - Gather suggestions for improvements and implementation details that could accelerate project success
@@ -55,6 +55,24 @@ The chatbot provides immediate, explicit assistance when users ask questions, wh
 
 ### Result:
 A comprehensive AI ecosystem where explicit user needs (chatbot) and implicit behavioral patterns (silent profiler) work together to create a seamlessly intelligent car shopping experience.
+
+# Preliminary details of the AI components architecture
+
+![[AI integration proposal 2.excalidraw|800]]
+
+
+By user profile we understand the user information inferred from their communication with the chatbot and their behavior on the website.
+
+AI chat service is a visual component. It communicates only with corresponding back-end service, which is essentially an AI agent, and sometimes it gets events from silent profiler, which communicates with other visual components only via event bus on the UI.
+
+Backend services for both components could be combined into one implementation because they are likely to share a lot of functionality, though it could be done via delegation.
+
+There is no direct communication between the silent profiler and the AI chat components on the UI. It's done only via EventBus.
+
+Both backend components are stateless, and they use Redis to store the conversation and the current information about the user profile.
+
+For the registered users, the profile information is also flushed to the database.
+
 
 
 # Interactive AI Chatbot Experience
@@ -718,11 +736,5 @@ An intelligent background system that transforms static car shopping into a dyna
 **LLM Inference:** "Active outdoor lifestyle. Highlight adventure capabilities, all-weather performance, gear-hauling features rather than luxury amenities"
 **Impact:** Personalizes content focus and feature prioritization for lifestyle match
 
-
-# More details about the AI components architecture
-
-
-
-![[AI integration proposal 2.excalidraw|800]]
 
 
