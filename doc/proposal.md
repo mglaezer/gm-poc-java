@@ -835,28 +835,10 @@ Different AI strategies can be tested and compared:
 5. **Segment Analysis**: Understand AI impact across different user demographics
 
 ### Expected Improvements
-Based on verified industry research and case studies:
-
+Based on industry research and case studies:
 
 - **Conversion Rate Gains:**  
   - AI chatbots increase e-commerce conversion rates by **23%** ([Glassix](https://www.glassix.com/article/study-shows-ai-chatbots-enhance-conversions-and-resolve-issues-faster)).
   - Users engaging with chatbots are **248% more likely to purchase** ([Smartsupp](https://www.smartsupp.com/blog/how-to-increase-e-commerce-conversion-rate-with-ai-chatbot-see-think-do-care/)).
-  - Automotive dealerships using AI-powered customer behavior analysis see up to **33.9% higher conversion rates** ([ROCK/CarCo](https://www.rock.co.uk/case-studies/ai-automotive-industry-heightens-roi/)), and **37% more leads in two months** ([Master of Code](https://masterofcode.com/blog/ai-in-automotive-industry)).
+  - Automotive dealerships using AI-powered customer behavior analysis see up to **33.9% higher conversion rates** ([ROCK/CarCo](https://www.rock.co.uk/case-studies/ai-automotive-industry-heightens-roi/)).
 
-- **Sales & ROI Impact:**  
-  - Dealerships report a **75% ROI increase** within a year of AI adoption ([ROCK/CarCo](https://www.rock.co.uk/case-studies/ai-automotive-industry-heightens-roi/)).
-  - **68–76% of dealers** say AI positively impacts sales, inventory, service, and parts ([CDK Global](https://www.cdkglobal.com/media-center/artificial-intelligence-dealership-cdk-global-research-finds-auto-retailers-are)).
-  - AI-powered platforms can identify buyers **up to 8x more likely to purchase** ([Cox Automotive](https://www.coxautoinc.com/newsroom/vinsolutions-predictive-insights/)).
-
-- **Customer Service & Efficiency:**  
-  - AI chatbots resolve **71% of customer issues successfully** ([Glassix](https://www.glassix.com/article/study-shows-ai-chatbots-enhance-conversions-and-resolve-issues-faster)).
-  - Dealers typically see ROI within **6–8 months** of AI implementation ([DaveAI](https://www.daveai.co/blog/roi-of-ai-in-automotive-dealerships/)).
-
-- **Real-World Example:**  
-  - AAA AUTO sells **900 cars/month** with AI chatbots, achieving a **10% lead conversion rate**—5x higher than traditional forms ([Smartsupp/AAA AUTO](https://www.smartsupp.com/blog/aaa-auto-case-study/)).
-
-- **Market Growth:**  
-  - The automotive AI market is projected to grow from **$387M (2023) to $2.7B (2032)** ([BotsCrew](https://botscrew.com/blog/ai-in-the-automotive-industry/)).
-
-**Summary:**  
-AI delivers substantial, measurable improvements in automotive sales, lead generation, and operational efficiency, with rapid ROI and broad industry adoption.
