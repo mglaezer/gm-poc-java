@@ -737,4 +737,20 @@ An intelligent background system that transforms static car shopping into a dyna
 **Impact:** Personalizes content focus and feature prioritization for lifestyle match
 
 
+# Using silent profiler and AI chatbot in combination with other ML techniques
 
+Besides Generative AI, there are other ML techniques that can be used to improve the user experience. 
+Some of the are mentioned below.
+
+### Collective Intelligence
+The system can use recommendation systems / collective intelligence to suggest vehicles based on user behavior. 
+This will require collecting information about preferences of the users, their choices and using those to suggest similar options to other users.
+
+### Customer Segmentation
+By either using the customer segmentation data (if) already available in GM systems, or by building a new segmentation model, 
+the system can provide more targeted recommendations once the belonging of the current customer behavior to a particular segment is established.
+
+### Other inferences techniques
+Various classification and regression techniques are available to make inferences about the user's behavior.
+Predicting the probability of a particular vehicle being of interest to a user, based on the user's behavior, 
+can be used to rank the vehicles in the search results.
