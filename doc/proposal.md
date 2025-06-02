@@ -37,7 +37,7 @@ This document serves to initiate detailed discussions about integrating AI capab
 - Solicit critical feedback on approach, technical feasibility, and architectural decisions
 - Gather suggestions for improvements and implementation details that could accelerate project success
 
-This proposal seeks feedback on feasibility, implementation priorities, and architectural refinements.
+Readers are encouraged to critique the proposed approach, challenge feasibility assumptions, and contribute architectural insights and implementation details.
 
 
 # Links
@@ -65,7 +65,7 @@ The proposed AI components architecture must follow the current dash platform's 
 This approach ensures that AI enhancements integrate naturally without disrupting current system architecture.
 
 
-# Two Complementary AI Components:
+# Two Complementary AI Components
 
 **1. Interactive AI Chatbot**
 - Purpose: Direct user communication and assistance
@@ -83,22 +83,22 @@ The chatbot provides immediate, explicit assistance when users ask questions, wh
 ### Result:
 A comprehensive AI ecosystem where explicit user needs (chatbot) and implicit behavioral patterns (silent profiler) work together to create a seamlessly intelligent car shopping experience.
 
-# Preliminary details of the AI components architecture
+# Technical Architecture Details
 
 ![[AI integration proposal 2.excalidraw|800]]
 
 
-By user profile we understand the user information inferred from their communication with the chatbot and their behavior on the website.
+The user profile encompasses information inferred from both chatbot interactions and website behavioral patterns.
 
-AI chat service is a visual component. It communicates only with corresponding back-end service, which is essentially an AI agent, and sometimes it gets events from silent profiler, which communicates with other visual components only via event bus on the UI.
+The AI chat service is a visual component that communicates exclusively with its corresponding backend service (an AI agent). It may receive events from the silent profiler, which interfaces with other visual components solely through the UI event bus.
 
-Backend services for both components could be combined into one implementation because they are likely to share a lot of functionality, though it could be done via delegation.
+Backend services for both components could be unified into a single implementation given their shared functionality, or maintained separately using delegation approach.
 
-There is no direct communication between the silent profiler and the AI chat components on the UI. It's done only via EventBus.
+The silent profiler and AI chat components have no direct UI communication—all interactions occur through the EventBus.
 
-Both backend components are stateless, and they use Redis to store the conversation and the current information about the user profile.
+Both backend components maintain stateless architecture, utilizing Redis for conversation persistence and user profile storage.
 
-For the registered users, the profile information is also flushed to the database.
+For registered users, profile information is additionally persisted to the database for long-term storage.
 
 
 
@@ -684,7 +684,7 @@ Want to see details or compare these “cool” rides? Let me know which ones ca
 ### Invisible User Experience Optimizer
 
 The Silent Behavioral Intelligence Component operates as an invisible UI component listening for the available bus events.
-It sends the events to the backend AI agent (Behavioral Intelligence Service) which continuously analyzes user interactions across the platform to understand behavior patterns, preferences, and psychological state.
+It transmits events to the backend AI agent (Behavioral Intelligence Service), which continuously analyzes user interactions across the platform to understand behavior patterns, preferences, and psychological state.
 
 ### Core Capabilities:
 
@@ -835,7 +835,7 @@ Different AI strategies can be tested and compared:
 5. **Segment Analysis**: Understand AI impact across different user demographics
 
 ### Expected Improvements
-Based on industry research and case studies:
+Based on verified industry research and case studies:
 
 - **Conversion Rate Gains:**  
   - AI chatbots increase e-commerce conversion rates by **23%** ([Glassix](https://www.glassix.com/article/study-shows-ai-chatbots-enhance-conversions-and-resolve-issues-faster)).
