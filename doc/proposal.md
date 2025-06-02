@@ -4,8 +4,8 @@
 
 This document serves to initiate detailed discussions about integrating AI capabilities into the current dash platform. The objectives are to:
 
-- Explore possibilities for embedding AI functionality within existing DASH architecture
-- Provoke discussion on short-term and long-term implementation plans and assess feasibility
+- Explore possibilities for embedding AI functionality within existing dash architecture
+- Outline short-term and long-term implementation plans and assess feasibility
 - Present the overall architecture of proposed AI components for stakeholder review
 - Solicit critical feedback on approach, technical feasibility, and architectural decisions
 - Gather suggestions for improvements and implementation details that could accelerate project success
@@ -48,7 +48,7 @@ This approach ensures that AI enhancements integrate naturally without disruptin
 **2. Silent Behavioral Intelligence Component**
 - Purpose: Passive user behavior analysis and experience optimization
 - Interaction: Listens to event bus traffic, analyzes patterns, publishes insights
-- User Experience: Invisible intelligence that enhances other UI components via event bus.
+- User Experience: Invisible intelligence that enhances other UI components via event bus
 
 ### Collaborative Intelligence:
 The chatbot provides immediate, explicit assistance when users ask questions, while the silent profiler continuously optimizes the background experience without interrupting user flow directly. Both components share insights: the chatbot leverages behavioral analysis for better responses, while the profiler incorporates chat context for deeper understanding.
@@ -657,7 +657,7 @@ Want to see details or compare these “cool” rides? Let me know which ones ca
 ### Invisible User Experience Optimizer
 
 The Silent Behavioral Intelligence Component operates as an invisible UI component listening for the available bus events.
-It sends the events to the BE AI Agent ("Behavior Intelligece Service) which continuously analyzes user interactions across platform to understand behavior patterns, preferences, and psychological state.
+It sends the events to the backend AI agent (Behavioral Intelligence Service) which continuously analyzes user interactions across the platform to understand behavior patterns, preferences, and psychological state.
 
 ### Core Capabilities:
 
@@ -709,7 +709,7 @@ An intelligent background system that transforms static car shopping into a dyna
 ##### 2. Purchase Urgency Assessment  
 **Event Pattern:** `inventory_searched(local)` → `inventory_searched(50mi)` → `dealer_contact_initiated()` → `inventory_searched(100mi)` → Multiple same-day sessions
 **LLM Inference:** "Expanding search radius + dealer contact + session frequency indicates immediate need"
-**Impact:** Potentially offer similar options that are closer, etc.
+**Impact:** Highlights immediately available alternatives
 
 ##### 3. Value Priority Hierarchy
 **Event Pattern:** `car_viewed(Camry_LE)` → `specifications_viewed(safety_ratings)` → `option_selected(safety_pkg)` → `option_deselected(sunroof)` → `option_selected(advanced_safety)`
@@ -719,7 +719,7 @@ An intelligent background system that transforms static car shopping into a dyna
 ##### 4. Decision Confidence Assessment
 **Event Pattern:** Same configuration recreated 5+ times → `comparison_tool_used(same_cars)` → `reviews_read(repeatedly)` → No progression to contact
 **LLM Inference:** "High confidence in choice but low confidence in decision-making. User needs external validation"
-**Impact:** Triggers social proof content, expert reviews, and testimonials.
+**Impact:** Triggers social proof content, expert reviews, and testimonials
 
 ##### 5. Cross-Brand Shopping Psychology
 **Event Pattern:** `car_viewed($32k)` → `car_viewed($42k)` → `car_viewed($45k)` → `configuration_started($42k)`
@@ -740,17 +740,17 @@ An intelligent background system that transforms static car shopping into a dyna
 # Using silent profiler and AI chatbot in combination with other ML techniques
 
 Besides Generative AI, there are other ML techniques that can be used to improve the user experience. 
-Some of the are mentioned below.
+Some of these are mentioned below.
 
 ### Collective Intelligence
 The system can use recommendation systems / collective intelligence to suggest vehicles based on user behavior. 
 This will require collecting information about preferences of the users, their choices and using those to suggest similar options to other users.
 
 ### Customer Segmentation
-By either using the customer segmentation data (if) already available in GM systems, or by building a new segmentation model, 
+By either using the customer segmentation data (if already available) in GM systems, or by building a new segmentation model, 
 the system can provide more targeted recommendations once the belonging of the current customer behavior to a particular segment is established.
 
-### Other inferences techniques
+### Other Inference Techniques
 Various classification and regression techniques are available to make inferences about the user's behavior.
 Predicting the probability of a particular vehicle being of interest to a user, based on the user's behavior, 
 can be used to rank the vehicles in the search results.
