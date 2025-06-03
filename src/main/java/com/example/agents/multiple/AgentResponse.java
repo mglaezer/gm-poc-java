@@ -1,6 +1,6 @@
 package com.example.agents.multiple;
 
-import org.llmtoolkit.core.annotations.Cue;
+import com.example.llmtoolkit.core.annotations.Cue;
 
 /**
  * Structured response from agents that includes psychological state analysis

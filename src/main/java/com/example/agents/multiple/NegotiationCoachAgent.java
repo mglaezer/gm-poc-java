@@ -2,15 +2,15 @@ package com.example.agents.multiple;
 
 import com.example.agents.CommonRequirements.*;
 import com.example.agents.ToolsImpl;
+import com.example.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
+import com.example.llmtoolkit.core.JteTemplateProcessor;
+import com.example.llmtoolkit.core.TemplatedLLMServiceFactory;
+import com.example.llmtoolkit.core.annotations.PT;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
-import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
-import org.llmtoolkit.core.JteTemplateProcessor;
-import org.llmtoolkit.core.TemplatedLLMServiceFactory;
-import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Negotiation Coach Agent - Helps with pricing strategy and trade-ins

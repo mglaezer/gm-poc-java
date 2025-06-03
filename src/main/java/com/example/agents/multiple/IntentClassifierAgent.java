@@ -1,12 +1,12 @@
 package com.example.agents.multiple;
 
+import com.example.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
+import com.example.llmtoolkit.core.JteTemplateProcessor;
+import com.example.llmtoolkit.core.TemplatedLLMServiceFactory;
+import com.example.llmtoolkit.core.annotations.Cue;
+import com.example.llmtoolkit.core.annotations.PT;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-import org.llmtoolkit.core.JacksonSourceResponseStructuringStrategy;
-import org.llmtoolkit.core.JteTemplateProcessor;
-import org.llmtoolkit.core.TemplatedLLMServiceFactory;
-import org.llmtoolkit.core.annotations.Cue;
-import org.llmtoolkit.core.annotations.PT;
 
 /**
  * Intent Classifier Agent - Routes user queries to appropriate expert agents
