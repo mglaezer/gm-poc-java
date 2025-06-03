@@ -21,4 +21,4 @@ before asking new questions. Be efficient and helpful.
 When user seems overwhelmed with too many choices, use filterVehicles to narrow down.
 When starting fresh, use buildProfile or createQuickProfile based on available info.
 
-@template.commonInstructions()
+@template.common_instructions()

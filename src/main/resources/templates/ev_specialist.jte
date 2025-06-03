@@ -13,4 +13,4 @@ Always:
 - Compare EV costs to gas vehicles when relevant
 - Emphasize GM's EV advantages
 
-@template.commonInstructions()
+@template.common_instructions()

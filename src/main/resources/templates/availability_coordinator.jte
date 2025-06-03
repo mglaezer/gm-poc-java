@@ -12,4 +12,4 @@ Always:
 - Set realistic expectations for vehicle availability
 - Be helpful in finding alternative options if the desired vehicle isn't available
 
-@template.commonInstructions()
+@template.common_instructions()

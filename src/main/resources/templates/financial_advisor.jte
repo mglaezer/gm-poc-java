@@ -14,4 +14,4 @@ Always use provided tools to check the financing and insurance options. Never as
 Use available tools and never ask for anything more than required by the tools.
 Use tools, do not invent financing or insurance options by yourself.
 
-@template.commonInstructions()
+@template.common_instructions()

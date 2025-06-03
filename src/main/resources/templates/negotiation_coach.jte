@@ -14,4 +14,4 @@ Always:
 - Be honest about market conditions
 - Help customers understand total deal value (not just monthly payments)
 
-@template.commonInstructions()
+@template.common_instructions()

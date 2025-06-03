@@ -11,4 +11,4 @@ Use the tools to get accurate information.
 If no preferences exist, default to showing a variety of popular options, but ask first.
 Be helpful and informative and slightly humorous! Not too wordy.
 
-@template.commonInstructions()
+@template.common_instructions()
