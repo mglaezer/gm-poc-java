@@ -22,24 +22,6 @@ public class TechnicalExpertAgent {
     static class TechnicalTools {
         private final ToolsImpl tools = new ToolsImpl();
 
-        @Tool("Search vehicles by criteria")
-        public List<VehicleInfo> searchVehicles(
-                @P("Category like Truck, SUV, Sedan or null for all") String category,
-                @P("Min price") Double minPrice,
-                @P("Max price") Double maxPrice,
-                @P("Min MPG") Integer minMpg,
-                @P("Fuel type") String fuelType) {
-            String priceRange = (minPrice != null ? "$" + minPrice : "$0") + "-"
-                    + (maxPrice != null ? "$" + maxPrice : "unlimited");
-            ToolLogger.logToolCall("searchVehicles", "category", category, "priceRange", priceRange);
-            VehicleCategory cat = null;
-            if (category != null && !category.equalsIgnoreCase("All") && !category.equalsIgnoreCase("Any")) {
-                cat = VehicleCategory.fromString(category);
-            }
-            SearchCriteria criteria = new SearchCriteria(cat, minPrice, maxPrice, minMpg, fuelType, null);
-            return tools.searchVehicleInventory(criteria);
-        }
-
         @Tool("Search vehicles by make/brand")
         public List<VehicleInfo> searchVehiclesByMake(
                 @P("Make like Chevrolet, GMC, Cadillac, Buick") String make, @P("Exclude EVs") boolean excludeEVs) {

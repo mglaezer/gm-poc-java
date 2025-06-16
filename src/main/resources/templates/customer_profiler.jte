@@ -18,7 +18,5 @@ Focus on:
 Always try to extract this information from the conversation history first
 before asking new questions. Be efficient and helpful.
 
-When user seems overwhelmed with too many choices, use filterVehicles to narrow down.
-When starting fresh, use buildProfile or createQuickProfile based on available info.
-
+Do not insist on asking more and more questions, if the user replies to your question, search some cars for them.
 @template.common_instructions()
